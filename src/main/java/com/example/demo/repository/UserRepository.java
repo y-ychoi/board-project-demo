@@ -1,13 +1,15 @@
 package com.example.demo.repository;
 
-import com.example.demo.entity.User;
-import org.springframework.data.jpa.repository.JpaRepository;
-
 import java.util.Optional;
 
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import com.example.demo.entity.User;
+
+
 //JpaRepository<Entity타입, PK타입> 상속
-public class UserRepository extends JpaRepository<User, Long> {
+public interface UserRepository extends JpaRepository<User, Long> {
 	
-	// 사용자 ID(username)로 User 정보를 찾아오는 메서드 정의
-	Optional<User> findByUsername(String username);
+	// 추상 메서드는 세미콜론(;)으로 끝납니다.
+	Optional<User> findByUserId(String userId); 
 }
