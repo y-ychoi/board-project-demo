@@ -1,12 +1,32 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"> 
 <head>
     <meta charset="UTF-8">
-    <title>메인 페이지</title>
+    <title>게시판 프로젝트 메인 페이지</title>
 </head>
 <body>
     <h1>게시판 프로젝트 메인 페이지</h1>
-    <p>로그인에 성공하셨습니다!</p>
-    <a href="/logout">로그아웃</a>
-</body>
+    
+    <div style="float: right; margin-bottom: 20px;">
+        
+        <div sec:authorize="isAuthenticated()">
+            <span style="margin-right: 10px;">
+                환영합니다, <strong sec:authentication="name">사용자 ID</strong>님!
+            </span>
+            <form th:action="@{/user/logout}" method="post" style="display: inline;">
+                <button type="submit">로그아웃</button>
+            </form>
+        </div>
+        
+        <div sec:authorize="isAnonymous()">
+            <a th:href="@{/user/login}"><button>로그인</button></a>
+            <a th:href="@{/user/signup}"><button style="margin-left: 10px;">회원가입</button></a>
+        </div>
+    </div>
+    <p style="clear: both;">
+        <a th:href="@{/board/list}"><button>게시판 바로가기</button></a>
+    </p>
+
+    </body>
 </html>

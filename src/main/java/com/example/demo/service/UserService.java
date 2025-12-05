@@ -2,8 +2,12 @@ package com.example.demo.service;
 
 import com.example.demo.entity.User;
 import com.example.demo.repository.UserRepository;
+
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -21,6 +25,7 @@ public class UserService {
 	 * @param name - 사용자 이름
 	 * @return DB에 저장된 USER 엔티티 객체
 	 */
+	@Transactional
 	public User create(String userId, String userPw, String name) {
 		
 		// 1. 비밀번호 암호화(BCrypt)
@@ -35,9 +40,23 @@ public class UserService {
 				.build();
 		
 		// 3. Repository를 통해 데이터베이스에 저장
-		this.userRepository.save(user);
+		userRepository.save(user);
 		
 		return user;
-	}		
+	}	
+	
+	
+	/**
+	 * userId(로그인 ID)로 User 엔티티의 PK(userNo)를 조회합니다.
+	 */
+	@Transactional(readOnly = true)
+	public Long getAuthorNoByUserId(String userId) {
+	    // userRepository는 findByUserId()를 제공합니다.
+	    // Optional<User>를 받아 게시글 작성자 PK(userNo)를 추출합니다.
+	    return userRepository.findByUserId(userId)
+	        // 사용자를 찾을 수 없으면 예외 발생
+	        .orElseThrow(() -> new UsernameNotFoundException("작성자를 찾을 수 없습니다: " + userId))
+	        .getUserNo(); // 👈 조회된 User 객체에서 userNo(PK)를 반환
+	}
 
 }

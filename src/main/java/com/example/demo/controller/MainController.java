@@ -1,4 +1,4 @@
-package com.example.boardproject.controller; // 컨트롤러 패키지
+package com.example.demo.controller; // 컨트롤러 패키지
 
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -10,6 +10,7 @@ public class MainController {
     @GetMapping("/")
     public String root() {
         // "index"라는 템플릿 파일(index.html)을 찾아 사용자에게 반환하라는 의미입니다.
+    	
         return "index"; 
     }
 }

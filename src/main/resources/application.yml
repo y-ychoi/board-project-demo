@@ -1,0 +1,25 @@
+spring:
+  application:
+    name: board-project-demo
+
+  # MySQL DB 접속 설정
+  datasource:
+    url: jdbc:mysql://localhost:3306/demo_db?serverTimezone=Asia/Seoul
+    username: root  # 👈 본인의 MySQL 사용자 이름으로 변경
+    password: mydbss5500@sql  # 👈 본인의 MySQL 비밀번호로 변경
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  # JPA/Hibernate 설정
+  jpa:
+    properties:
+      hibernate:
+        # MySQL 방언(Dialect) 설정
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
+    hibernate:
+      # 개발 단계에서는 테이블 자동 생성을 허용합니다. 
+      ddl-auto: update
+    # 실행되는 SQL 쿼리를 콘솔에 출력합니다.
+    show-sql: true
+    generate-ddl: true
+# H2 Console 관련 설정은 필요 없으므로 생략했습니다.
