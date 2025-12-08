@@ -58,5 +58,31 @@ public class UserService {
 	        .orElseThrow(() -> new UsernameNotFoundException("작성자를 찾을 수 없습니다: " + userId))
 	        .getUserNo(); // 👈 조회된 User 객체에서 userNo(PK)를 반환
 	}
+	/**
+	 * userId(로그인 ID)를 기반으로 회원의 이름을 조회합니다.
+	 * @param userId 현재 로그인된 사용자의 ID (Principal.getName())
+	 * @return 회원의 이름 (name)
+	 */
+	@Transactional(readOnly = true)
+	public String getUserNameByUserId(String userId) {
+	    
+	    // UserRepository를 사용하여 userId로 User 엔티티를 조회합니다.
+	    User user = userRepository.findByUserId(userId)
+	        .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다: " + userId));
+	    
+	    // 🚨 User 엔티티에서 name 필드만 반환합니다.
+	    return user.getName();
+	}
+	
+	/**
+	 * 아이디 중복 확인
+	 * @param userId 확인할 로그인 ID (String)
+	 * @return true: 이미 사용 중, false: 사용 가능
+	 */
+	@Transactional(readOnly = true)
+	public boolean isUserIdDuplicated(String userId) {
+	    // Repository의 findByUserId 메서드를 사용하여 DB에 해당 ID가 있는지 확인합니다.
+	    return userRepository.findByUserId(userId).isPresent();
+	}
 
 }

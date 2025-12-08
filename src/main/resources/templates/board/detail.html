@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org" 
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"> 
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${board.title} + ' - 상세 조회'"></title>
+</head>
+<body>
+    <h1 th:text="${board.title}">게시글 제목</h1>
+    <hr>
+    
+    <p>
+        <strong>작성자:</strong> 
+        <span th:text="${board.authorUser != null ? 
+                        board.authorUser.name + ' (' + board.authorUser.userId + ')' 
+                        : '탈퇴 회원'}">작성자이름(ID)</span>
+         |
+        <strong>작성일:</strong> <span th:text="${#temporals.format(board.createDt, 'yyyy-MM-dd HH:mm')}">2025-12-03 10:00</span> |
+        <strong>조회수:</strong> <span th:text="${board.viewCnt}">0</span>
+    </p>
+    
+    <hr>
+    
+    <div style="min-height: 200px; padding: 15px; border: 1px solid #eee; background-color: #f9f9f9; white-space: pre-wrap;">
+        <p th:text="${board.content}">여기에 게시글 내용이 표시됩니다.</p> 
+    </div>
+    
+    <hr>
+	<h2>댓글 목록</h2>
+
+	<div th:each="comment : ${commentList}" style="border-bottom: 1px dashed #ccc; padding: 10px 0;">
+    	<p><strong>작성자 ID:</strong> <span th:text="${comment.authorNo}">1</span></p>
+    	<p th:text="${comment.content}" style="margin: 5px 0;"></p>
+    	<p style="font-size: 0.8em; color: #666;">작성일: <span th:text="${#temporals.format(comment.createDt, 'yyyy-MM-dd HH:mm')}"></span></p>
+	</div>
+
+	<div sec:authorize="isAuthenticated()" style="margin-top: 20px;">
+    <h3>댓글 작성</h3>
+    <form th:action="@{|/board/comment/create/${board.boardNo}|}" method="post">
+        <textarea name="content" rows="3" required style="width: 100%;"></textarea>
+        <button type="submit" style="margin-top: 5px;">댓글 등록</button>
+    </form>
+</div>
+    
+    <th:block sec:authorize="isAuthenticated()">
+        <th:block th:if="${board.authorUser != null and board.authorUser.userId == #authentication.name}">
+            
+            <a th:href="@{/board/modify(id=${board.boardNo})}" style="margin-right: 10px;">수정</a>
+        
+            <a th:href="@{/board/delete(id=${board.boardNo})}" 
+               onclick="return confirm('정말로 삭제하시겠습니까?');" style="margin-right: 10px;">삭제</a>
+        
+        </th:block>
+    </th:block>
+
+	<a href="/board/list" style="margin-left: 10px;">목록으로</a>
+
+</body>
+</html>

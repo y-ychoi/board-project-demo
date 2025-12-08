@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>회원가입</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <h1>회원가입</h1>
+    
+    <form th:action="@{/user/signup}" method="post">
+        
+        <div th:if="${signupError}" style="color: red; margin-bottom: 15px;">
+            <p th:text="${signupError}"></p>
+        </div>
+
+        <div>
+            <label for="userId">아이디:</label>
+            <input type="text" id="userId" name="userId" required th:value="${prevUserId}">
+            <button type="button" id="checkIdBtn">중복 확인</button> 
+            <span id="idCheckResult" style="margin-left: 10px;"></span> 
+        </div>
+
+        <div>
+            <label for="userPw">비밀번호:</label>
+            <input type="password" id="userPw" name="userPw" required>
+        </div>
+        
+        <div>
+            <label for="userPw2">비밀번호 확인:</label>
+            <input type="password" id="userPw2" name="userPw2" required>
+        </div>
+
+        <div>
+            <label for="name">이름:</label>
+            <input type="text" id="name" name="name" required th:value="${prevName}">
+        </div>
+        
+        <button type="submit">가입하기</button>
+    </form>
+
+    <a th:href="@{/user/login}">로그인 페이지로 돌아가기</a>
+
+    <script th:inline="javascript">
+    $(document).ready(function() {
+        
+        // 🚨🚨🚨 1. 상태 관리 변수 추가 🚨🚨🚨
+        // false: 중복 확인 필요, true: 중복 확인 완료 (사용 가능 상태)
+        var isIdChecked = false; 
+        
+        // 🚨 2. 아이디 입력 변경 시 상태 초기화
+        $("#userId").on('input', function() {
+             $("#idCheckResult").text("");
+             isIdChecked = false; // 아이디가 바뀌면 무조건 재검증 필요
+        });
+
+        // ----------------------------------------------------
+        // ** 중복 확인 버튼 클릭 이벤트 (검사 통합) **
+        // ----------------------------------------------------
+        $("#checkIdBtn").click(function() {
+            var userId = $("#userId").val();
+            var resultSpan = $("#idCheckResult");
+            
+            // 🚨 영문/숫자 3~15자만 허용하는 정규 표현식 (JS용)
+            var regex = /^[a-zA-Z0-9]{3,15}$/; 
+            
+            // ----------------------------------------------------
+            // 🚨🚨🚨 1차 검증: 길이 및 형식 체크 (AJAX 요청 전) 🚨🚨🚨
+            // ----------------------------------------------------
+            if (userId === "" || !regex.test(userId)) {
+                alert("아이디는 영문/숫자 3~15자만 사용 가능합니다.");
+                resultSpan.text("형식 오류").css('color', 'red');
+                isIdChecked = false; // 검사 실패했으므로 상태 초기화
+                return; // 서버 요청을 보내지 않고 여기서 함수 종료
+            }
+            
+            // ----------------------------------------------------
+            // 2차 검증: 서버 중복 확인 (형식 통과 시에만 실행)
+            // ----------------------------------------------------
+            $.ajax({
+                type: "GET",
+                url: "/user/checkId",
+                data: { userId: userId },
+                success: function(response) {
+                    if (response === "true") {
+                        // 중복 (사용 불가능)
+                        alert("이미 사용 중인 아이디입니다. 다른 아이디로 바꿔주세요.");
+                        resultSpan.text("사용 불가능").css('color', 'red');
+                        isIdChecked = false;
+                    } else {
+                        // 중복 아님 (사용 가능)
+                        alert("사용 가능한 아이디입니다.");
+                        resultSpan.text("사용 가능!").css('color', 'green');
+                        isIdChecked = true;
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error("AJAX Error:", error);
+                    resultSpan.text("서버 통신 오류 발생.").css('color', 'red');
+                    isIdChecked = false;
+                }
+            });
+        });
+        
+        // ----------------------------------------------------
+        // ** 폼 제출 이벤트 (가입하기 버튼) **
+        // ----------------------------------------------------
+        $("form").submit(function(event) {
+            // 🚨🚨🚨 1차 검증: 중복 확인 필수 조건 체크 🚨🚨🚨
+            if (isIdChecked === false) {
+                alert("중복 확인을 해주세요.");
+                event.preventDefault(); // 제출 중단
+                return false;
+            }
+            
+            // 2차 검증: 비밀번호 일치 확인
+            var pw1 = $("#userPw").val();
+            var pw2 = $("#userPw2").val();
+
+            if (pw1 !== pw2) {
+                alert("비밀번호와 비밀번호 확인 값이 일치하지 않습니다.");
+                event.preventDefault(); 
+                return false;
+            }
+            
+            // 모든 검증 통과 시 서버로 제출
+            return true;
+        });
+    });
+</script>
+</body>
+</html>

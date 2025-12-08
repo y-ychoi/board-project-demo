@@ -8,7 +8,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor; // Lombok의 기본 생성자 어노테이션은 사용
-import lombok.Setter;
 
 @Entity
 @Table(name = "TB_USER")

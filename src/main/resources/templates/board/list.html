@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org" 
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"> 
+<head>
+    <meta charset="UTF-8">
+    <title>게시글 목록</title>
+    </head>
+<body>
+    
+    <div style="float: right; margin-bottom: 20px;">
+    
+    <div sec:authorize="isAuthenticated()">
+        <span style="margin-right: 10px;">
+            환영합니다, 
+            <strong th:text="${currentUserName}">사용자 이름</strong>님!
+        </span>
+        
+        <form th:action="@{/user/logout}" method="post" style="display: inline;">
+            <button type="submit">로그아웃</button>
+        </form>
+    </div>
+    <div sec:authorize="isAnonymous()">
+            <a th:href="@{/user/login}"><button>로그인</button></a>
+            <a th:href="@{/user/signup}"><button style="margin-left: 10px;">회원가입</button></a>
+    </div>
+    
+    </div>
+    
+    <h1 style="display: inline-block; clear: both;">게시글 목록</h1>
+    <a th:href="@{/}" style="margin-left: 20px;">[메인 페이지로 이동]</a>
+    <a href="/board/create" style="display: inline-block; margin-bottom: 10px; margin-left: 10px;">새 글 작성</a>
+
+    <table border="1" style="width: 80%; border-collapse: collapse;">
+        <thead>
+            <tr>
+                <th>번호</th>
+                <th>제목</th>
+                <th>작성자</th> 
+                <th>작성일</th>
+                <th>조회수</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr th:each="board, i : ${boardPaging.content}"> 
+                <td style="text-align: center;" th:text="${boardPaging.totalElements - (boardPaging.number * boardPaging.size) - i.index}"></td> 
+                
+                <td> 
+                    <a th:href="@{/board/detail(id=${board.boardNo})}" th:text="${board.title}">테스트 제목입니다</a>
+                </td>
+
+                <td style="text-align: center;">
+                    <span th:text="${T(com.example.demo.util.MaskingUtil).maskName(board.authorUser.name)}">홍*동</span>
+                    (<span th:text="${T(com.example.demo.util.MaskingUtil).maskUserId(board.authorUser.userId)}">us******</span>)
+                </td>
+                
+                <td style="text-align: center;" th:text="${#temporals.format(board.createDt, 'yyyy-MM-dd HH:mm')}">2025-12-03</td>
+                
+                <td style="text-align: center;" th:text="${board.viewCnt}">0</td>
+            </tr>
+        </tbody>
+    </table>
+    <div style="margin-top: 30px; text-align: center;">
+        
+        <th:block th:with="
+            currentPage=${boardPaging.number},
+            totalPages=${boardPaging.totalPages},
+            blockSize=10,
+            currentGroup=${currentPage / blockSize},
+            startPage=${currentGroup * blockSize},
+            endPage=${(startPage + blockSize - 1) < totalPages ? (startPage + blockSize - 1) : (totalPages - 1)}
+        ">
+
+        <ul style="list-style: none; padding: 0;">
+    
+		    <li th:class="${!boardPaging.hasPrevious} ? 'disabled' : ''" 
+		        style="display: inline-block; margin: 0 5px;">
+		        <a th:href="@{|/board/list?page=${boardPaging.number - 1}|}" 
+		           th:attrappend="style=${!boardPaging.hasPrevious} ? 'pointer-events: none; color: gray;'"
+		           >&#x2039;</a> 
+		    </li>
+		    
+		    <li th:each="page: ${#numbers.sequence(startPage, endPage)}"
+		        th:class="${page == boardPaging.number} ? 'active' : ''" 
+		        style="display: inline-block; margin: 0 5px; font-weight: bold; text-decoration: none;">
+		        <th:block th:if="${page == boardPaging.number}">
+		            <span th:text="${page + 1}" style="color: red;">1</span>
+		        </th:block>
+		        <th:block th:unless="${page == boardPaging.number}">
+		            <a th:text="${page + 1}" th:href="@{|/board/list?page=${page}|}">1</a>
+		        </th:block>
+		    </li>
+		    
+		    <li th:class="${!boardPaging.hasNext} ? 'disabled' : ''" 
+		        style="display: inline-block; margin: 0 5px;">
+		        <a th:href="@{|/board/list?page=${boardPaging.number + 1}|}" 
+		           th:attrappend="style=${!boardPaging.hasNext} ? 'pointer-events: none; color: gray;'"
+		           >&#x203a;</a>
+		    </li>
+		    
+		</ul>
+        </th:block>
+    </div>
+ 
+
+
+</body>
+</html>
