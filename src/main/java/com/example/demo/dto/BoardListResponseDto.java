@@ -1,6 +1,5 @@
 package com.example.demo.dto;
 
-import com.example.demo.entity.User;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -18,8 +17,10 @@ public class BoardListResponseDto {
     // 🚨 DTO의 핵심: 계산된 댓글 개수 필드
     private Long commentCount;
 
-    // 💡 작성자 정보를 담기 위한 User 객체 (수동 조인 결과)
-    private User authorUser;
+    // 💡💡💡 마스킹된 작성자 정보를 담을 필드를 String 타입으로 추가 💡💡💡
+    private String authorName; 
+    private String authorUserId;
 
-    // BoardService에서 Entity를 DTO로 변환할 때 사용할 생성자/메서드 등을 추가할 수 있습니다.
+    private Long authorNo;
+
 }

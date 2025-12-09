@@ -26,5 +26,8 @@ public class Comment extends BaseEntity {
     @Column(name = "author_no", nullable = false)
     private Long authorNo; // 댓글 작성자 번호 (FK 역할)
     
+    public void updateContent(String content) {
+        this.content = content;
+    }
     // @Transient 필드는 필요하지 않습니다. 댓글은 즉시 작성자 ID를 사용할 것입니다.
 }

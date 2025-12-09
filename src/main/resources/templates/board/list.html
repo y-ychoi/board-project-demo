@@ -48,11 +48,10 @@
                     <a th:href="@{/board/detail(id=${board.boardNo})}" th:text="${board.title}">테스트 제목입니다</a>
                 </td>
 
-                <td style="text-align: center;">
-                    <span th:text="${T(com.example.demo.util.MaskingUtil).maskName(board.authorUser.name)}">홍*동</span>
-                    (<span th:text="${T(com.example.demo.util.MaskingUtil).maskUserId(board.authorUser.userId)}">us******</span>)
-                </td>
-                
+                <td>
+                    <span th:text="${board.authorName}">마스킹된 이름</span> 
+                    (<span th:text="${board.authorUserId}">마스킹된 아이디</span>)
+                </td> 
                 <td style="text-align: center;" th:text="${#temporals.format(board.createDt, 'yyyy-MM-dd HH:mm')}">2025-12-03</td>
                 
                 <td style="text-align: center;" th:text="${board.viewCnt}">0</td>

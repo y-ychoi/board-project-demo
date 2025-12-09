@@ -7,7 +7,7 @@ public class MaskingUtil {
 
     /**
      * 이름 마스킹 규칙:
-     * - 2글자: 첫 번째 글자 마스킹 (예: 이슬 -> *슬)
+     * - 2글자: 첫 번째 글자 마스킹 (예: 이슬 -> 이*)
      * - 3글자 이상: 첫 번째와 마지막 글자 제외 마스킹 (예: 홍길동 -> 홍*동)
      */
     public static String maskName(String name) {
@@ -37,7 +37,7 @@ public class MaskingUtil {
     /**
      * 아이디 마스킹 규칙:
      * - 2글자 이하: 마스킹 없음
-     * - 3글자 이상: 처음 2글자를 제외하고 ******을 붙여 마스킹 (예: usid -> us******)
+     * - 3글자 이상: 처음 2글자를 제외하고 ****을 붙여 마스킹 (예: usid -> us****)
      */
     public static String maskUserId(String userId) {
         if (userId == null || userId.isEmpty()) {
@@ -46,7 +46,7 @@ public class MaskingUtil {
 
         String prefix = userId.substring(0, 2);
         
-        // 아이디 길이에 관계없이 ******을 붙입니다.
-        return prefix + "******"; // 예) usid -> us******, user123 -> us******
+        // 아이디 길이에 관계없이 ****을 붙입니다.
+        return prefix + "****"; // 예) usid -> us****, user123 -> us****
     }
 }

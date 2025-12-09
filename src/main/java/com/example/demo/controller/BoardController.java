@@ -7,18 +7,18 @@ import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.PostMapping;
 
+import com.example.demo.dto.BoardDetailResponseDto;
 import com.example.demo.dto.BoardListResponseDto;
+import com.example.demo.dto.CommentResponseDto;
 import com.example.demo.entity.Board;
-import com.example.demo.entity.Comment;
 import com.example.demo.service.BoardService;
 import com.example.demo.service.CommentService;
 import com.example.demo.service.UserService;
-import com.example.demo.util.MaskingUtil;
+
 
 import lombok.RequiredArgsConstructor;
 
@@ -38,7 +38,7 @@ public class BoardController {
 	        // 🚨 UserService를 통해 DB에서 이름(name)을 조회하는 로직 추가
 	        String userName = userService.getUserNameByUserId(userId); 
 	        
-	        // Model에 currentUserName을 담아 View로 전달
+	        // Model 에 currentUserName을 담아 View로 전달
 	        model.addAttribute("currentUserName", userName);
 	    }
 	    return "index"; // index.html 반환
@@ -51,21 +51,21 @@ public class BoardController {
 	public String getBoardList(Model model, @RequestParam(value="page", defaultValue="0") int page, 
 	                           Principal principal) { 
 	    
-	    // 1. 게시글 페이징 데이터 조회 및 작성자 정보 주입
-	    Page<BoardListResponseDto> paging = boardService.getBoardList(page);
-	    
-	    // 2. 🚨 이름 조회 및 Model에 추가 로직 🚨
+	    // 💡 1. 현재 로그인된 사용자의 ID( user name )를 가져옵니다. 
+	    // Service 에서 마스킹 예외 처리에 사용됩니다.
+	    String currentUserId = principal != null ? principal.getName() : null;
+
+	    // 2. Service 호출 시 현재 사용자 ID를 전달합니다.
+	    Page<BoardListResponseDto> paging = boardService.getBoardList(page, currentUserId); // 🚨 currentUserId 파라미터 추가
+
+	    // 3. View 에서 사용할 현재 로그인 사용자의 이름을 Model 에 담습니다. (유지)
 	    if (principal != null) {
-	        String userId = principal.getName(); 
-	        String userName = userService.getUserNameByUserId(userId); 
-	        // View에서 사용할 현재 로그인 사용자의 이름을 Model에 담습니다.
+	        // String userId = principal.getName(); // 이미 위에서 currentUserId로 조회했습니다.
+	        String userName = userService.getUserNameByUserId(currentUserId); 
 	        model.addAttribute("currentUserName", userName); 
 	    }
 	    
-	    // 3. 💡 MaskingUtil 클래스를 View에서 static 메서드로 호출할 수 있도록 Model에 추가
-	    model.addAttribute("MaskingUtil", MaskingUtil.class);
-	    
-	    // 4. 🚨 중복 없이 페이징 객체를 Model에 담습니다.
+	    // 4. 중복 없이 페이징 객체를 Model 에 담습니다.
 	    model.addAttribute("boardPaging", paging);
 	    
 	    return "board/list"; // board/list.html 반환
@@ -73,7 +73,7 @@ public class BoardController {
 	
 	/**
 	 * 게시글 상세 조회 화면
-	 * @param boardNo 조회할 게시글 번호 (URL 쿼리 파라미터 id로 받음)
+	 * @param boardNo 조회할 게시글 번호 (URL 쿼리 파라미터 id 로 받음)
 	 * @param model Thymeleaf로 데이터를 전달하는 객체
 	 * @return board/detail.html 템플릿 이름
 	 */
@@ -82,23 +82,33 @@ public class BoardController {
 	@GetMapping("/detail")
 	public String getBoardDetail(@RequestParam("id") Long boardNo, Model model, Principal principal) { 
 	    
-	    // 1. 게시글 조회 (board 엔티티를 영속성 컨텍스트에 로드)
-	    Board board = boardService.getBoardDetail(boardNo); 
+	    // 1. 게시글 조회 (DTO 반환, Service 내부에서 조회수 증가까지 처리됨)
+	    BoardDetailResponseDto boardDetail = boardService.getBoardDetail(boardNo); // 🚨 DTO 반환
+
+	    // 2. 🚨 조회수 증가 호출 제거 🚨
+	    //    boardService.increaseViewCount(board); // <-- 이 줄은 삭제합니다.
 	    
-	    // 2. 🚨 조회수 증가 호출 (별도의 트랜잭션으로 처리) 🚨
-	    //    이 시점에 board 엔티티가 변경됨
-	    boardService.increaseViewCount(board); 
+
+		// 3. 댓글 목록 조회 (기존 로직 유지)
+	    //    댓글은 BoardDetailResponseDto에 포함시키지 않고 별도로 조회합니다.
+	    List<CommentResponseDto> commentList = commentService.getCommentList(boardNo);
 	    
-	    // 3. 댓글 목록 조회
-	    List<Comment> commentList = commentService.getCommentList(boardNo); 
-	    
-	    //모델에 담기
-	    model.addAttribute("board", board);
+	    // 모델에 담기
+	    model.addAttribute("board", boardDetail); // 🚨 DTO를 'board'라는 이름으로 Model에 담습니다.
 	    model.addAttribute("commentList", commentList);
 	    
-	    // 3. 현재 로그인 사용자 정보도 Model에 담기 (선택적)
+	    // 4. 현재 로그인 사용자 정보도 Model 에 담기 (기존 로직 유지)
 	    if (principal != null) {
-	        model.addAttribute("currentUserId", principal.getName());
+	        String userId = principal.getName();
+            
+            // 🚨🚨🚨 UserService를 통해 현재 로그인 사용자의 PK(userNo)를 조회 🚨🚨🚨
+	        Long currentUserNo = userService.getUserNoByUserId(userId); 
+
+            // Model에 PK를 담아 View로 전달
+	        model.addAttribute("currentUserNo", currentUserNo); 
+            
+            // 기존에 Model에 currentUserId를 담는 로직이 있었다면 유지
+            model.addAttribute("currentUserId", userId); 
 	    }
 	    
 	    return "board/detail";
@@ -128,7 +138,7 @@ public class BoardController {
 	    
 	    // 2. 🚨 UserService를 통해 userId를 사용하여 실제 userNo(PK)를 가져옵니다.
 	    //    이 코드로 인해 이전 경고가 사라지고 작성자 연결이 완성됩니다.
-	    Long authorNo = userService.getAuthorNoByUserId(userId); 
+	    Long authorNo = userService.getUserNoByUserId(userId); 
 
 	    // 3. Service에 authorNo를 전달하여 게시글을 저장합니다.
 	    boardService.createPost(title, content, authorNo);
@@ -140,8 +150,8 @@ public class BoardController {
 	    // ... (권한 확인 로직 생략)
 	    
 	    // 🚨 폼을 보여주기 위해 Model에 데이터를 담습니다. 🚨
-	    Board board = boardService.getBoardDetail(boardNo);
-	    model.addAttribute("board", board);
+		BoardDetailResponseDto boardDetail = boardService.getBoardDetail(boardNo);
+	    model.addAttribute("board", boardDetail);
 	    
 	    // 폼을 반환합니다.
 	    return "board/modify_form"; 
@@ -155,64 +165,42 @@ public class BoardController {
 	                                 @RequestParam("content") String content,
 	                                 Principal principal) {
 	    
-	    // 1. 게시글 조회 (권한 검사 및 수정 대상 엔티티 가져오기)
-	    Board board = boardService.getBoardDetail(boardNo);
-	    Long currentAuthorNo = userService.getAuthorNoByUserId(principal.getName());
+	    // 1. 현재 로그인한 사용자의 PK를 조회합니다.
+	    Long currentAuthorNo = userService.getUserNoByUserId(principal.getName());
 
-	    // 2. 🚨🚨 보안 검사: 로그인 사용자와 작성자 비교
-	    if (!board.getAuthorNo().equals(currentAuthorNo)) {
-	        // 권한이 없으면 상세 페이지로 리다이렉트
-	        return "redirect:/board/detail?id=" + boardNo; 
-	    }
+	    // 2. 🚨🚨 수정: DTO 대신 Service의 권한 검사 메서드를 호출하여 Board 엔티티를 로드 🚨🚨
+	    //    이 시점에서 이미 권한 검사가 완료되며, 권한이 없으면 예외(UnauthorizedAccessException) 발생
+	    Board board = boardService.getAuthorizedBoard(boardNo, currentAuthorNo); 
 	    
 	    // 3. 💡 BoardService 호출: DB에 수정 내용을 반영합니다.
 	    boardService.modifyPost(board, title, content); // DB UPDATE 실행
 	    
 	    // 4. 성공 후 수정된 상세 페이지로 리다이렉트합니다.
 	    return "redirect:/board/detail?id=" + boardNo;
-	    // 🚨 이전의 두 개의 return 문은 삭제되었습니다.
 	}
 	
 	@GetMapping("/delete")
 	public String boardDelete(@RequestParam("id") Long boardNo, Principal principal) {
 	    
-	    // 1. 게시글 조회 (권한 검사를 위해 엔티티를 가져옵니다.)
-	    Board board = boardService.getBoardDetail(boardNo);
-	    
-	    // 2. 현재 로그인 사용자 확인
-	    Long currentAuthorNo = userService.getAuthorNoByUserId(principal.getName());
-
-	    // 3. 🚨🚨 보안 검사: 권한 없음 (로그인 사용자와 작성자 비교)
-	    if (!board.getAuthorNo().equals(currentAuthorNo)) {
-	        // 권한이 없으면 상세 페이지로 리다이렉트
+	    // 1. 현재 로그인한 사용자의 PK를 조회합니다.
+	    //    Principal 객체가 null이 될 수 있으므로, Spring Security 설정에 따라 처리 필요
+	    if (principal == null) {
+	        // 비로그인 상태일 경우 로그인 페이지 또는 상세 페이지로 리다이렉트
 	        return "redirect:/board/detail?id=" + boardNo; 
 	    }
+	    Long currentUserNo = userService.getUserNoByUserId(principal.getName());
+
+	    // 2. 🚨🚨 수정: Service의 권한 검사 메서드를 호출하여 Board 엔티티를 로드 🚨🚨
+	    //    이 시점에서 Service가 권한을 검사하고, 권한이 없으면 UnauthorizedAccessException을 던집니다.
+	    //    컴파일 오류(Type mismatch)가 해결됩니다.
+	    Board board = boardService.getAuthorizedBoard(boardNo, currentUserNo);
 	    
-	    // 4. 💡 BoardService 호출: DB에서 게시글을 삭제합니다.
+	    // 3. 💡 BoardService 호출: DB에서 게시글을 삭제합니다.
 	    boardService.deletePost(board);
 	    
-	    // 5. 성공 후 목록 페이지로 리다이렉트합니다.
+	    // 4. 성공 후 목록 페이지로 리다이렉트합니다.
 	    return "redirect:/board/list";
 	}
 	
-	@PostMapping("/comment/create/{boardNo}")
-    public String createComment(
-            @PathVariable("boardNo") Long boardNo, // URL 경로에서 게시글 번호를 받음
-            @RequestParam("content") String content,
-            Principal principal) {
-        
-        // 1. 로그인 사용자 확인 (로그인 필수)
-        if (principal == null) {
-            return "redirect:/user/login"; 
-        }
-
-        // 2. 작성자 userNo 조회
-        Long authorNo = userService.getAuthorNoByUserId(principal.getName());
-        
-        // 3. Service 호출 및 저장
-        commentService.createComment(boardNo, content, authorNo);
-
-        // 4. 저장 후 해당 게시글 상세 페이지로 리다이렉트
-        return "redirect:/board/detail?id=" + boardNo;
-    }
+	
 }

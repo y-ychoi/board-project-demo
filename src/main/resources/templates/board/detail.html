@@ -6,54 +6,166 @@
     <title th:text="${board.title} + ' - 상세 조회'"></title>
 </head>
 <body>
-    <h1 th:text="${board.title}">게시글 제목</h1>
-    <hr>
+   <div style="display: flex; align-items: flex-end;gap: 20px;padding-bottom: 5px;">
+    
+    <h1 th:text="${board.title}" style="margin: 0;">게시글 제목</h1>
+    
+    <th:block sec:authorize="isAuthenticated()">
+        <th:block th:if="${board.authorNo != null and board.authorNo.equals(currentUserNo)}">
+            
+            <div style="white-space: nowrap;"> <a th:href="@{/board/modify(id=${board.boardNo})}" style="margin-right: 10px; color: blue;">수정</a>
+                <a th:href="@{/board/delete(id=${board.boardNo})}" 
+                   onclick="return confirm('정말로 삭제하시겠습니까?');" style="color: red;">삭제</a>
+            </div>
+            
+        </th:block>
+    </th:block>
+    <a href="/board/list" style="margin-left: 10px;">목록으로</a>
+	</div>
+	<hr>
     
     <p>
-        <strong>작성자:</strong> 
-        <span th:text="${board.authorUser != null ? 
-                        board.authorUser.name + ' (' + board.authorUser.userId + ')' 
-                        : '탈퇴 회원'}">작성자이름(ID)</span>
-         |
-        <strong>작성일:</strong> <span th:text="${#temporals.format(board.createDt, 'yyyy-MM-dd HH:mm')}">2025-12-03 10:00</span> |
-        <strong>조회수:</strong> <span th:text="${board.viewCnt}">0</span>
-    </p>
+    	<strong>작성자:</strong> 
+    	<span th:text="${board.authorName + ' (' + board.authorUserId + ')'}">작성자이름(ID)</span>
+    	<strong>작성일:</strong> <span th:text="${#temporals.format(board.createDt, 'yyyy-MM-dd HH:mm')}">2025-12-03 10:00</span> |
+    	<strong>조회수:</strong> <span th:text="${board.viewCnt}">0</span>
+	</p>
     
     <hr>
     
     <div style="min-height: 200px; padding: 15px; border: 1px solid #eee; background-color: #f9f9f9; white-space: pre-wrap;">
         <p th:text="${board.content}">여기에 게시글 내용이 표시됩니다.</p> 
     </div>
-    
-    <hr>
-	<h2>댓글 목록</h2>
+    <hr>  
+	
+	<h3 style="margin-top: 30px; border-bottom: 2px solid #ddd; padding-bottom: 5px;">댓글 목록</h3>
 
-	<div th:each="comment : ${commentList}" style="border-bottom: 1px dashed #ccc; padding: 10px 0;">
-    	<p><strong>작성자 ID:</strong> <span th:text="${comment.authorNo}">1</span></p>
-    	<p th:text="${comment.content}" style="margin: 5px 0;"></p>
-    	<p style="font-size: 0.8em; color: #666;">작성일: <span th:text="${#temporals.format(comment.createDt, 'yyyy-MM-dd HH:mm')}"></span></p>
+<div th:each="comment : ${commentList}" 
+     th:id="'comment-' + ${comment.commentNo}" 
+     th:data-comment-no="${comment.commentNo}" 
+     style="border-bottom: 1px dashed #ccc; padding: 10px 0;">
+    
+    <p>
+        <strong>작성자:</strong> 
+        <span th:text="${comment.authorName}">마스킹된 이름</span>
+        (<span th:text="${comment.authorUserId}">마스킹된 아이디</span>)
+    </p>
+    
+    <p th:id="'content-' + ${comment.commentNo}" 
+       th:text="${comment.content}" 
+       class="comment-content"
+       style="margin: 5px 0;"></p>
+       
+    <p style="font-size: 0.8em; color: #666;">
+        작성일: <span th:text="${#temporals.format(comment.createDt, 'yyyy-MM-dd HH:mm')}"></span>
+        
+        <th:block th:if="${currentUserNo != null and comment.authorNo != null and comment.authorNo.equals(currentUserNo)}">
+            
+            <a href="#" 
+               th:onclick="|enableEdit(${comment.commentNo})|" 
+               th:id="'modify-btn-' + ${comment.commentNo}"
+               style="margin-left: 15px; color: blue;">[수정]</a>
+               
+            <a th:href="@{/comment/delete(commentNo=${comment.commentNo}, boardNo=${board.boardNo})}"
+               onclick="return confirm('댓글을 삭제하시겠습니까?');"
+               style="margin-left: 5px; color: red;">[삭제]</a>
+        </th:block>
+    </p>
+    
+    <div th:id="'edit-area-' + ${comment.commentNo}" style="display:none; margin-top: 5px;">
+        <textarea th:id="'edit-input-' + ${comment.commentNo}" th:text="${comment.content}" rows="3" style="width: 100%; margin-bottom: 5px;"></textarea>
+        <button th:onclick="|submitEdit(${comment.commentNo})|" style="margin-right: 5px;">수정 완료</button>
+        <button th:onclick="|cancelEdit(${comment.commentNo})|">취소</button>
+    </div>
 	</div>
 
 	<div sec:authorize="isAuthenticated()" style="margin-top: 20px;">
-    <h3>댓글 작성</h3>
-    <form th:action="@{|/board/comment/create/${board.boardNo}|}" method="post">
-        <textarea name="content" rows="3" required style="width: 100%;"></textarea>
-        <button type="submit" style="margin-top: 5px;">댓글 등록</button>
-    </form>
-</div>
+    	<h3>댓글 작성</h3>
+    	<form th:action="@{|/comment/create/${board.boardNo}|}" method="post">
+        	<textarea name="content" rows="3" required style="width: 100%;"></textarea>
+        	<button type="submit" style="margin-top: 5px;">댓글 등록</button>
+    	</form>
+	</div>
     
-    <th:block sec:authorize="isAuthenticated()">
-        <th:block th:if="${board.authorUser != null and board.authorUser.userId == #authentication.name}">
-            
-            <a th:href="@{/board/modify(id=${board.boardNo})}" style="margin-right: 10px;">수정</a>
-        
-            <a th:href="@{/board/delete(id=${board.boardNo})}" 
-               onclick="return confirm('정말로 삭제하시겠습니까?');" style="margin-right: 10px;">삭제</a>
-        
-        </th:block>
-    </th:block>
+<script>
+    // 현재 수정 모드 상태를 추적 (다른 댓글 동시 수정을 방지)
+    let isEditing = false; 
 
-	<a href="/board/list" style="margin-left: 10px;">목록으로</a>
+    // 1. 수정 모드 활성화 (Textarea 표시 및 버튼 전환)
+    function enableEdit(commentNo) {
+        if (isEditing) {
+            alert("이미 다른 댓글을 수정 중입니다.");
+            return;
+        }
+        isEditing = true;
 
+        const contentSpan = document.getElementById(`content-${commentNo}`);
+        const editArea = document.getElementById(`edit-area-${commentNo}`);
+        const modifyBtn = document.getElementById(`modify-btn-${commentNo}`);
+        const deleteBtn = modifyBtn.nextElementSibling; // 삭제 버튼 찾기 (수정 버튼 바로 다음 요소)
+
+        // 현재 내용 및 버튼 숨기고 수정 폼 보이기
+        contentSpan.style.display = 'none';
+        editArea.style.display = 'block';
+        modifyBtn.style.display = 'none';
+        if (deleteBtn) deleteBtn.style.display = 'none';
+    }
+
+    // 2. 수정 취소 (원래 상태로 복구)
+    function cancelEdit(commentNo) {
+        isEditing = false;
+        const contentSpan = document.getElementById(`content-${commentNo}`);
+        const editArea = document.getElementById(`edit-area-${commentNo}`);
+        const modifyBtn = document.getElementById(`modify-btn-${commentNo}`);
+        const deleteBtn = modifyBtn.nextElementSibling;
+
+        // 폼 숨기고 내용 다시 보이기
+        contentSpan.style.display = 'block'; // 'block' 대신 'inline' 또는 'inline-block' 사용 가능
+        editArea.style.display = 'none';
+        modifyBtn.style.display = 'inline';
+        if (deleteBtn) deleteBtn.style.display = 'inline';
+    }
+
+    // 3. 수정 내용 서버 전송 (AJAX/Fetch)
+    function submitEdit(commentNo) {
+        const inputElement = document.getElementById(`edit-input-${commentNo}`);
+        const newContent = inputElement.value;
+
+        if (newContent.trim() === '') {
+            alert("내용을 입력해주세요.");
+            return;
+        }
+
+        // Fetch API를 사용하여 비동기 POST 요청 전송
+        fetch('/comment/modify', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                // 🚨 CSRF 토큰 처리 필요 시 여기에 추가
+            },
+            // 파라미터 구성
+            body: `commentNo=${commentNo}&newContent=${encodeURIComponent(newContent)}`
+        })
+        .then(response => response.text())
+        .then(result => {
+            if (result === 'SUCCESS') {
+                // 성공 시 화면 내용 업데이트 및 수정 모드 해제
+                const contentSpan = document.getElementById(`content-${commentNo}`);
+                contentSpan.innerText = newContent; // 화면 내용 업데이트
+                cancelEdit(commentNo); // 수정 모드 종료
+            } else if (result.startsWith('ERROR:')) {
+                // Controller에서 반환된 오류 메시지 처리
+                alert("오류 발생: " + result);
+                cancelEdit(commentNo);
+            } else {
+                alert("알 수 없는 오류 발생");
+            }
+        })
+        .catch(error => {
+            console.error('Error during modification:', error);
+            alert("서버 통신 중 오류가 발생했습니다.");
+        });
+    }
+</script>
 </body>
 </html>

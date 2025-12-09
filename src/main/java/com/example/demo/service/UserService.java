@@ -39,7 +39,7 @@ public class UserService {
 				.role("ROLE_USER") // 기본 권한 부여
 				.build();
 		
-		// 3. Repository를 통해 데이터베이스에 저장
+		// 3. Repository 를 통해 데이터베이스에 저장
 		userRepository.save(user);
 		
 		return user;
@@ -50,7 +50,7 @@ public class UserService {
 	 * userId(로그인 ID)로 User 엔티티의 PK(userNo)를 조회합니다.
 	 */
 	@Transactional(readOnly = true)
-	public Long getAuthorNoByUserId(String userId) {
+	public Long getUserNoByUserId(String userId) {
 	    // userRepository는 findByUserId()를 제공합니다.
 	    // Optional<User>를 받아 게시글 작성자 PK(userNo)를 추출합니다.
 	    return userRepository.findByUserId(userId)
@@ -81,7 +81,7 @@ public class UserService {
 	 */
 	@Transactional(readOnly = true)
 	public boolean isUserIdDuplicated(String userId) {
-	    // Repository의 findByUserId 메서드를 사용하여 DB에 해당 ID가 있는지 확인합니다.
+	    // Repository 의 findByUserId 메서드를 사용하여 DB에 해당 ID가 있는지 확인합니다.
 	    return userRepository.findByUserId(userId).isPresent();
 	}
 
