@@ -1,6 +1,8 @@
 package com.example.demo.controller;
 
+import com.example.demo.entity.Board;
 import com.example.demo.exception.UnauthorizedAccessException;
+import com.example.demo.repository.BoardRepository;
 import com.example.demo.service.CommentService;
 import com.example.demo.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +19,7 @@ public class CommentController {
     // 🚨 Service 주입 (권한 확인 및 삭제 로직을 위임)
     private final CommentService commentService;
     private final UserService userService;
+    private final BoardRepository boardRepository;
 
     /**
      * 댓글 삭제 요청 처리 (GET 방식 사용)
@@ -97,19 +100,22 @@ public class CommentController {
                                 @RequestParam("content") String content,
                                 Principal principal) {
         
-        // 1. 로그인 확인
+        // 1. 로그인 확인 (기존 로직 유지)
         if (principal == null) {
-            // 비로그인 상태는 Spring Security가 처리하는 것이 일반적이나, 명시적 처리
             return "redirect:/user/login"; 
         }
         
-        // 2. 현재 로그인 사용자 PK 조회
+        // 2. 현재 로그인 사용자 PK 조회 (기존 로직 유지)
         Long authorNo = userService.getUserNoByUserId(principal.getName());
 
-        // 3. Service 호출: 댓글 저장
-        commentService.createComment(boardNo, content, authorNo);
+        // 🚨 3. Board 엔티티 조회 🚨
+        Board board = boardRepository.findById(boardNo)
+                .orElseThrow(() -> new IllegalArgumentException("게시글 번호에 해당하는 게시글을 찾을 수 없습니다."));
 
-        // 4. 상세 페이지로 리다이렉트 (새로 작성된 댓글 포함)
+        // 🚨 4. Service 호출: Board 객체를 전달하도록 수정 🚨
+        commentService.createComment(board, content, authorNo);
+
+        // 5. 상세 페이지로 리다이렉트 (기존 로직 유지)
         return "redirect:/board/detail?id=" + boardNo;
     }
 }

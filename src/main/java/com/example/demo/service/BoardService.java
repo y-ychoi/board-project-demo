@@ -48,8 +48,7 @@ public class BoardService {
 	    
 	    List<BoardListResponseDto> dtoList = boardPaging.getContent().stream()
 	            .map(board -> {
-	                Long commentCount = commentRepository.countByBoardNo(board.getBoardNo());
-	                
+	            	int commentCount = (int) commentRepository.countByBoardBoardNo(board.getBoardNo());
 	                // 1. 작성자 정보 로드 (User Entity는 Service 내부에서만 사용)
 	                User authorUser = userRepository.findById(board.getAuthorNo()).orElse(null);
 	                
@@ -66,6 +65,7 @@ public class BoardService {
 	                        .title(board.getTitle())
 	                        .viewCnt(board.getViewCnt())
 	                        .createDt(board.getCreateDt())
+	                        .modifyDt(board.getModifyDt())
 	                        .commentCount(commentCount) 
 	                        
 	                        //finalName/finalUserId 주입

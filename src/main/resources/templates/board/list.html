@@ -36,27 +36,39 @@
                 <th>번호</th>
                 <th>제목</th>
                 <th>작성자</th> 
-                <th>작성일</th>
+                <th>최종수정일</th>
                 <th>조회수</th>
             </tr>
         </thead>
         <tbody>
-            <tr th:each="board, i : ${boardPaging.content}"> 
-                <td style="text-align: center;" th:text="${boardPaging.totalElements - (boardPaging.number * boardPaging.size) - i.index}"></td> 
-                
-                <td> 
-                    <a th:href="@{/board/detail(id=${board.boardNo})}" th:text="${board.title}">테스트 제목입니다</a>
-                </td>
+    <tr th:each="board, i : ${boardPaging.content}"> 
+        
+        <td style="text-align: center;" th:text="${boardPaging.totalElements - (boardPaging.number * boardPaging.size) - i.index}"></td> 
+        
+        <td style="padding-left: 15px;"> 
+    <a th:href="@{/board/detail(id=${board.boardNo})}" th:text="${board.title}">테스트 제목입니다</a>
+    
+    <span th:if="${board.commentCount > 0}" style="margin-left: 5px; color: #007bff; font-weight: bold;">
+        [<span th:text="${board.commentCount}">1</span>]
+    </span>
+</td>
 
-                <td>
-                    <span th:text="${board.authorName}">마스킹된 이름</span> 
-                    (<span th:text="${board.authorUserId}">마스킹된 아이디</span>)
-                </td> 
-                <td style="text-align: center;" th:text="${#temporals.format(board.createDt, 'yyyy-MM-dd HH:mm')}">2025-12-03</td>
+        <td style="text-align: center;"> 
+            <span th:text="${board.authorName}">마스킹된 이름</span> 
+            (<span th:text="${board.authorUserId}">마스킹된 아이디</span>)
+        </td> 
+        
+        <td style="text-align: center;">
+            <span th:with="isModified=${board.modifyDt != null and board.modifyDt.isAfter(board.createDt)}">
                 
-                <td style="text-align: center;" th:text="${board.viewCnt}">0</td>
-            </tr>
-        </tbody>
+                <span th:text="${#temporals.format(isModified ? board.modifyDt : board.createDt, 'yyyy-MM-dd')}"></span>
+                
+                </span>
+        </td>
+        
+        <td style="text-align: center;" th:text="${board.viewCnt}">0</td>
+    </tr>
+</tbody>
     </table>
     <div style="margin-top: 30px; text-align: center;">
         

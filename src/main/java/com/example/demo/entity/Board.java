@@ -1,8 +1,8 @@
 package com.example.demo.entity;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.hibernate.annotations.Comment;
-
-
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -49,6 +49,14 @@ public class Board extends BaseEntity{
 	@Transient
 	@Setter
 	private User authorUser;
+	
+	
+	// 🚨 OneToMany 관계 설정 및 CascadeType.REMOVE, orphanRemoval=true 적용
+    @OneToMany(mappedBy = "board", // Comment.java의 private Board board 필드 이름을 지정
+               cascade = CascadeType.REMOVE, // 1. Board 삭제 시 Comment도 삭제
+               orphanRemoval = true)     // 2. 컬렉션에서 댓글이 제거될 경우 DB에서 삭제
+    @Builder.Default
+    private List<com.example.demo.entity.Comment>comments = new ArrayList<>();
 	
 	// 게시글 수정을 위한 메서드
 	public void update(String title, String content) {

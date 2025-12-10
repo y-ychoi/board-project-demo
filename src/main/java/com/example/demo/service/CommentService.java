@@ -1,6 +1,7 @@
 package com.example.demo.service;
 
 import com.example.demo.dto.CommentResponseDto;
+import com.example.demo.entity.Board;
 import com.example.demo.entity.Comment;
 import com.example.demo.entity.User;
 import com.example.demo.exception.UnauthorizedAccessException;
@@ -26,10 +27,10 @@ public class CommentService {
      * 댓글을 저장합니다.
      */
     @Transactional
-    public Comment createComment(Long boardNo, String content, Long authorNo) {
+    public Comment createComment(Board board, String content, Long authorNo) {
         
         Comment comment = Comment.builder()
-                .boardNo(boardNo) // 게시글 번호
+                .board(board) // 게시글 번호
                 .content(content) // 내용
                 .authorNo(authorNo) // 작성자 번호
                 .build();
@@ -43,7 +44,7 @@ public class CommentService {
     @Transactional(readOnly = true)
     public List<CommentResponseDto> getCommentList(Long boardNo) {
         
-        List<Comment> commentList = commentRepository.findAllByBoardNoOrderByCreateDtAsc(boardNo);
+    	List<Comment> commentList = commentRepository.findAllByBoardBoardNoOrderByCreateDtAsc(boardNo);
         
         // 🚨🚨🚨 DTO 변환 및 작성자 정보 조회 로직 🚨🚨🚨
         List<CommentResponseDto> dtoList = commentList.stream()
@@ -68,6 +69,7 @@ public class CommentService {
         	                .commentNo(comment.getCommentNo())
         	                .content(comment.getContent())
         	                .createDt(comment.getCreateDt())
+        	                .modifyDt(comment.getModifyDt())
         	                .authorName(maskedName)
         	                .authorUserId(maskedUserId)
         	                .authorNo(authorPk)

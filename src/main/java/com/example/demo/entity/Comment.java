@@ -19,9 +19,9 @@ public class Comment extends BaseEntity {
     @Column(columnDefinition = "TEXT", nullable = false)
     private String content; // 댓글 내용
     
-    // 🚨🚨🚨 외래키 없이 단순 ID 저장 🚨🚨🚨
-    @Column(name = "board_no", nullable = false)
-    private Long boardNo; // 댓글이 달린 게시글 번호 (FK 역할)
+    @ManyToOne 
+    @JoinColumn(name = "board_no") // DB 테이블의 외래 키 컬럼 이름 (board_no)을 지정합니다.
+    private Board board;
 
     @Column(name = "author_no", nullable = false)
     private Long authorNo; // 댓글 작성자 번호 (FK 역할)

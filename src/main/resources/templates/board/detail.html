@@ -25,11 +25,18 @@
 	<hr>
     
     <p>
-    	<strong>작성자:</strong> 
-    	<span th:text="${board.authorName + ' (' + board.authorUserId + ')'}">작성자이름(ID)</span>
-    	<strong>작성일:</strong> <span th:text="${#temporals.format(board.createDt, 'yyyy-MM-dd HH:mm')}">2025-12-03 10:00</span> |
-    	<strong>조회수:</strong> <span th:text="${board.viewCnt}">0</span>
-	</p>
+    <strong>작성자:</strong> 
+    <span th:text="${board.authorName + ' (' + board.authorUserId + ')'}">작성자이름(ID)</span>
+    
+    <span th:with="isModified=${board.modifyDt != null and board.modifyDt.isAfter(board.createDt)}" style="margin-left: 15px;">
+        <strong th:text="${isModified} ? '최종 수정일:' : '작성일:'"></strong>
+        <span th:text="${#temporals.format(isModified ? board.modifyDt : board.createDt, 'yyyy-MM-dd HH:mm')}"></span>
+        
+    </span>
+    
+    | <strong>조회수:</strong> <span th:text="${board.viewCnt}">0</span>
+</p>
+<hr>
     
     <hr>
     
@@ -46,7 +53,6 @@
      style="border-bottom: 1px dashed #ccc; padding: 10px 0;">
     
     <p>
-        <strong>작성자:</strong> 
         <span th:text="${comment.authorName}">마스킹된 이름</span>
         (<span th:text="${comment.authorUserId}">마스킹된 아이디</span>)
     </p>
@@ -57,10 +63,14 @@
        style="margin: 5px 0;"></p>
        
     <p style="font-size: 0.8em; color: #666;">
-        작성일: <span th:text="${#temporals.format(comment.createDt, 'yyyy-MM-dd HH:mm')}"></span>
         
-        <th:block th:if="${currentUserNo != null and comment.authorNo != null and comment.authorNo.equals(currentUserNo)}">
+        <span th:with="isModified=${comment.modifyDt != null and comment.modifyDt.isAfter(comment.createDt)}">
+                        
+            <span th:text="${#temporals.format(isModified ? comment.modifyDt : comment.createDt, 'yyyy-MM-dd HH:mm')}"></span>
             
+            <span th:if="${isModified}" style="color: #007bff; margin-left: 5px;">(수정됨)</span>
+        </span>
+        <th:block th:if="${currentUserNo != null and comment.authorNo != null and comment.authorNo.equals(currentUserNo)}">
             <a href="#" 
                th:onclick="|enableEdit(${comment.commentNo})|" 
                th:id="'modify-btn-' + ${comment.commentNo}"
@@ -77,15 +87,17 @@
         <button th:onclick="|submitEdit(${comment.commentNo})|" style="margin-right: 5px;">수정 완료</button>
         <button th:onclick="|cancelEdit(${comment.commentNo})|">취소</button>
     </div>
-	</div>
+</div>
 
-	<div sec:authorize="isAuthenticated()" style="margin-top: 20px;">
-    	<h3>댓글 작성</h3>
-    	<form th:action="@{|/comment/create/${board.boardNo}|}" method="post">
-        	<textarea name="content" rows="3" required style="width: 100%;"></textarea>
-        	<button type="submit" style="margin-top: 5px;">댓글 등록</button>
-    	</form>
-	</div>
+<div sec:authorize="isAuthenticated()" style="margin-top: 20px;">
+    <h3>댓글 작성</h3>
+    <form th:action="@{|/comment/create/${board.boardNo}|}" method="post">
+        <textarea name="content" rows="3" required style="width: 100%;"></textarea>
+        <button type="submit" style="margin-top: 5px;">댓글 등록</button>
+    </form>
+</div>
+        
+        
     
 <script>
     // 현재 수정 모드 상태를 추적 (다른 댓글 동시 수정을 방지)
