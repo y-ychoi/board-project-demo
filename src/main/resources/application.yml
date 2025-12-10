@@ -15,7 +15,7 @@ spring:
       hibernate:
         # MySQL 방언(Dialect) 설정
         dialect: org.hibernate.dialect.MySQLDialect
-        format_sql: true
+        format-sql: true
     hibernate:
       # 개발 단계에서는 테이블 자동 생성을 허용합니다. 
       ddl-auto: update
