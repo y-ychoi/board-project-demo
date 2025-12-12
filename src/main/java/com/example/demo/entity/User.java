@@ -32,12 +32,18 @@ public class User extends BaseEntity{
     @Comment("로그인 비밀번호")
     private String userPw; 
 
+    @Column(nullable = false, length = 100)  // nullable = false 추가: 이름은 필수 입력
     @Comment("회원 이름")
     private String name;
+    
+    @Column(nullable = false)  // 이메일은 필수 입력
+    @Comment("회원 이메일")
+    private String email;
 
-    @Column(nullable =false)
+    @Enumerated(EnumType.STRING)  // Enum을 문자열로 DB에 저장 (GUEST, ADMIN)
+    @Column(nullable = false)
     @Comment("회원 권한")
-    private String role; // 회원의 권한
+    private Role role;  // 회원의 권한 (GUEST 또는 ADMIN)
 
     // @AllArgsConstructor 대신, @Builder를 통해 생성 시 모든 필드를 인자로 받도록 처리합니다.
     // @Builder 어노테이션은 내부적으로 모든 필드를 받는 생성자를 자동으로 생성해 줍니다.
