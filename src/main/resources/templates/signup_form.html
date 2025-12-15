@@ -35,7 +35,12 @@
             <label for="name">이름:</label>
             <input type="text" id="name" name="name" required th:value="${prevName}">
         </div>
-        
+
+        <div>
+            <label for="email">이메일:</label>
+            <input type="email" id="email" name="email" required th:value="${prevEmail}">
+        </div>
+
         <button type="submit">가입하기</button>
     </form>
 

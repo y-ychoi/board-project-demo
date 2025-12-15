@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <title>회원 관리</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <h1>회원 관리</h1>
+
+    <table border="1">
+        <thead>
+            <tr>
+                <th>번호</th>
+                <th>아이디</th>
+                <th>이름</th>
+                <th>이메일</th>
+                <th>권한</th>
+                <th>가입일</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr th:each="user, iterStat : ${users}">
+                <td th:text="${iterStat.count}"></td>
+                <td th:text="${user.userId}"></td>
+                <td th:text="${user.name}"></td>
+                <td th:text="${user.email}"></td>
+                <td>
+                    <!-- 자기 자신이 아닌 경우만 드롭다운 표시 -->
+                    <select th:if="${user.userId != #authentication.name}"
+                            th:onchange="'updateRole(this, ' + ${user.userNo} + ')'">
+                        <option value="GUEST" th:selected="${user.role == T(com.example.demo.entity.Role).GUEST}">GUEST</option>
+                        <option value="ADMIN" th:selected="${user.role == T(com.example.demo.entity.Role).ADMIN}">ADMIN</option>
+                    </select>
+                    <!-- 자기 자신인 경우 텍스트로만 표시 -->
+                    <span th:if="${user.userId == #authentication.name}" th:text="${user.role} + ' (본인)'"></span>
+                </td>
+                <td th:text="${#temporals.format(user.createDt, 'yyyy-MM-dd')}"></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <br>
+    <a th:href="@{/board/list}">게시판으로 돌아가기</a>
+
+    <script>
+        function updateRole(selectElement, userNo) {
+            var newRole = selectElement.value;
+
+            if (confirm('권한을 ' + newRole + '로 변경하시겠습니까?')) {
+                // 폼을 동적으로 생성하여 POST 요청 전송
+                var form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '/admin/users/' + userNo + '/role';
+
+                var roleInput = document.createElement('input');
+                roleInput.type = 'hidden';
+                roleInput.name = 'role';
+                roleInput.value = newRole;
+
+                form.appendChild(roleInput);
+                document.body.appendChild(form);
+                form.submit();
+            } else {
+                // 취소 시 원래 값으로 되돌리기
+                selectElement.selectedIndex = selectElement.selectedIndex == 0 ? 1 : 0;
+            }
+        }
+    </script>
+</body>
+</html>

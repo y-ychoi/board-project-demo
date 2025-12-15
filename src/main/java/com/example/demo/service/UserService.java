@@ -9,6 +9,8 @@ import com.example.demo.repository.UserRepository;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -56,16 +58,22 @@ public class UserService {
      */
     @Transactional(readOnly = true)
     public List<UserListDto> getAllUsers() {
-            // 1. Repository에서 모든 회원을 가입일 기준 최신순으로 조회
-            List<User> users = userRepository.findAllByOrderByCreateDtDesc();
+        List<User> users = userRepository.findAllByOrderByCreateDtDesc();
 
-            // 2. Entity 리스트를 DTO 리스트로 변환
-            // stream(): 리스트를 스트림으로 변환
-            // map(): 각 User를 UserListDto로 변환
-            // collect(): 다시 리스트로 모음
-            return users.stream()
-                            .map(UserListDto::new)  // user -> new UserListDto(user)와 동일
-                            .collect(Collectors.toList());
+        // 현재 로그인한 사용자 ID 가져오기
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String currentUserId = auth.getName();
+
+        return users.stream()
+                .map(UserListDto::new)
+                .sorted((u1, u2) -> {
+                    // 현재 사용자를 맨 위로
+                    if (u1.getUserId().equals(currentUserId)) return -1;
+                    if (u2.getUserId().equals(currentUserId)) return 1;
+                    // 나머지는 가입일 기준 내림차순
+                    return u2.getCreateDt().compareTo(u1.getCreateDt());
+                })
+                .collect(Collectors.toList());
     }
 
     /**
@@ -75,17 +83,10 @@ public class UserService {
      */
     @Transactional
     public void updateUserRole(Long userNo, Role role) {
-            // 1. 회원 번호로 회원 조회
-            User user = userRepository.findById(userNo)
-                            .orElseThrow(() -> new UsernameNotFoundException("회원을 찾을 수 없습니다."));
-
-            // 2. 권한 변경 (toBuilder()를 사용하여 불변 객체 수정)
-            User updatedUser = user.toBuilder()
-                            .role(role)
-                            .build();
-
-            // 3. 변경된 회원 정보 저장
-            userRepository.save(updatedUser);
+        User user = userRepository.findById(userNo)
+                .orElseThrow(() -> new UsernameNotFoundException("회원을 찾을 수 없습니다."));
+    
+        user.updateRole(role); 
     }
 
     /**

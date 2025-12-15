@@ -38,7 +38,7 @@ public class UserSecurityService implements UserDetailsService {
         // 3. 사용자 권한(Role) 설정
         List<GrantedAuthority> authorities = new ArrayList<>();
         // 권한 문자열(user.getRole())을 SimpleGrantedAuthority 객체로 변환하여 목록에 추가합니다.
-        authorities.add(new SimpleGrantedAuthority(user.getRole()));
+        authorities.add(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()));
 
         // 4. Spring Security의 UserDetails 객체를 반환합니다.
         // Spring Security는 이 객체의 비밀번호(암호화된 userPw)와 로그인 시 입력된 평문 비밀번호를 비교합니다.

@@ -2,13 +2,18 @@ package com.example.demo.controller;
 
 
 import org.springframework.stereotype.Controller;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import com.example.demo.dto.UserSignupDto;
 import com.example.demo.service.UserService;
+
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @Controller
@@ -28,51 +33,62 @@ public class UserController {
 
 	@PostMapping("/user/signup")
 	public String signup(
-	        @RequestParam(name="userId") String userId,
-	        @RequestParam(name="userPw") String userPw,
-	        @RequestParam(name="userPw2") String userPw2, // 🚨 userPw2 필드 추가
-	        @RequestParam(name="name") String name,
+			@Valid @ModelAttribute UserSignupDto signupDto,  // DTO로 변경
+	        BindingResult bindingResult,  // 검증 결과를 담는 객체
+	        @RequestParam(name="userPw2") String userPw2,  // 비밀번호 확인은 별도로 받음
 	        RedirectAttributes redirectAttributes 
 	) {
 	    // ----------------------------------------------------
 	    // 1차 검증: 아이디 길이 및 형식 검증 (서버 측)
 	    // ----------------------------------------------------
-	    String regex = "^[a-zA-Z0-9]*$"; // 영문/숫자만 허용
-	    
-	    if (userId.length() < 3 || userId.length() > 15 || !userId.matches(regex)) {
+		// 1. 입력값 검증 오류가 있는 경우
+	    if (bindingResult.hasErrors()) {
+	        // 첫 번째 오류 메시지를 가져옴
+	        String errorMessage = bindingResult.getAllErrors().get(0).getDefaultMessage();
+	        redirectAttributes.addFlashAttribute("signupError", errorMessage);
+	        redirectAttributes.addFlashAttribute("prevUserId", signupDto.getUserId());
+	        redirectAttributes.addFlashAttribute("prevName", signupDto.getName());
+	        redirectAttributes.addFlashAttribute("prevEmail", signupDto.getEmail());
+	        return "redirect:/user/signup";
+	    }
+
+	 // 2. 아이디 형식 검증 (영문/숫자 3~15자)
+	    String regex = "^[a-zA-Z0-9]*$";
+	    if (signupDto.getUserId().length() < 3 || signupDto.getUserId().length() > 15
+	            || !signupDto.getUserId().matches(regex)) {
 	        redirectAttributes.addFlashAttribute("signupError", "아이디는 영문/숫자 3~15자만 사용 가능합니다.");
-	        redirectAttributes.addFlashAttribute("prevUserId", userId);
-	        redirectAttributes.addFlashAttribute("prevName", name);
+	        redirectAttributes.addFlashAttribute("prevUserId", signupDto.getUserId());
+	        redirectAttributes.addFlashAttribute("prevName", signupDto.getName());
+	        redirectAttributes.addFlashAttribute("prevEmail", signupDto.getEmail());
 	        return "redirect:/user/signup";
 	    }
 
-	    // 2차 검증: 비밀번호 일치 확인 (서버 측)
-	    if (!userPw.equals(userPw2)) {
+	    // 3. 비밀번호 일치 확인
+	    if (!signupDto.getUserPw().equals(userPw2)) {
 	        redirectAttributes.addFlashAttribute("signupError", "비밀번호와 비밀번호 확인 값이 일치하지 않습니다.");
-	        redirectAttributes.addFlashAttribute("prevUserId", userId);
-	        redirectAttributes.addFlashAttribute("prevName", name);
+	        redirectAttributes.addFlashAttribute("prevUserId", signupDto.getUserId());
+	        redirectAttributes.addFlashAttribute("prevName", signupDto.getName());
+	        redirectAttributes.addFlashAttribute("prevEmail", signupDto.getEmail());
 	        return "redirect:/user/signup";
 	    }
-
-	    // 🚨 3차 검증: 중복 확인 필수 조건 (클라이언트 측에서 isIdChecked 변수로 관리)
-	    // 서버 측에서는 중복 확인 없이 통과되면 DB에서 최종적으로 Duplicate entry 오류가 발생합니다.
-	    // 하지만, 현재 로직에서는 클라이언트가 중복 확인을 했다고 가정하고 서버는 최종 저장(create)만 시도합니다.
 	    
 	    try {
-	        // 4차 검증: 아이디 중복 확인 및 저장 (UserService 내부에서 중복 체크 후 저장)
-	        userService.create(userId, userPw, name);
+	    	// 4. 회원가입 처리 (DTO를 Service로 전달)
+	        userService.create(signupDto);
 
 	    } catch (IllegalStateException e) {
-	        // 🚨 DB에 이미 존재하는 ID라면 (서버 측 중복 체크 실패)
+	        // 중복된 아이디인 경우
 	        redirectAttributes.addFlashAttribute("signupError", e.getMessage());
-	        redirectAttributes.addFlashAttribute("prevUserId", userId);
-	        redirectAttributes.addFlashAttribute("prevName", name);
-	        return "redirect:/user/signup"; 
+	        redirectAttributes.addFlashAttribute("prevUserId", signupDto.getUserId());
+	        redirectAttributes.addFlashAttribute("prevName", signupDto.getName());
+	        redirectAttributes.addFlashAttribute("prevEmail", signupDto.getEmail());
+	        return "redirect:/user/signup";
 	    }
 
 	    // 5. 성공 시 로그인 페이지로 이동
 	    return "redirect:/user/login"; 
-	}
+	    }
+	   
 
 	@GetMapping("/user/login")
     public String login() {

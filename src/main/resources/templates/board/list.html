@@ -18,6 +18,9 @@
         <form th:action="@{/user/logout}" method="post" style="display: inline;">
             <button type="submit">로그아웃</button>
         </form>
+        <div sec:authorize="hasRole('ADMIN')">
+    		<a th:href="@{/admin/users}">회원 관리</a>
+		</div>
     </div>
     <div sec:authorize="isAnonymous()">
             <a th:href="@{/user/login}"><button>로그인</button></a>

@@ -34,14 +34,17 @@ public class SecurityConfig {
         http
         	.authorizeHttpRequests((authorizeHttpRequests) -> authorizeHttpRequests
         	    
-        	    // 🚨 1. 게시글 작성 경로는 인증된 사용자에게만 허용
+        	    // 🚨 1. 관리자 전용 경로는 ADMIN 권한만 허용
+        	    .requestMatchers(new AntPathRequestMatcher("/admin/**")).hasRole("ADMIN")
+        	    
+        	    // 🚨 2. 게시글 작성 경로는 인증된 사용자에게만 허용
         	    .requestMatchers(new AntPathRequestMatcher("/board/create")).authenticated()
         	    
-        	    // 🚨 2. 수정 및 삭제 경로는 인증된 사용자에게만 허용 (추가!)
+        	    // 🚨 3. 수정 및 삭제 경로는 인증된 사용자에게만 허용 (추가!)
         	    .requestMatchers(new AntPathRequestMatcher("/board/modify")).authenticated()
         	    .requestMatchers(new AntPathRequestMatcher("/board/delete")).authenticated()
 
-        	    // 3. 나머지 모든 경로는 모두 허용
+        	    // 4. 나머지 모든 경로는 모두 허용
         	    .requestMatchers(new AntPathRequestMatcher("/**")).permitAll())
         	.csrf((csrf) -> csrf.disable())
             

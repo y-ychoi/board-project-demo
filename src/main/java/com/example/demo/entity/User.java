@@ -52,4 +52,7 @@ public class User extends BaseEntity{
     public void updatePassword(String userPw) {
         this.userPw = userPw;
     }
+    public void updateRole(Role role) {
+        this.role = role;
+    }
 }
