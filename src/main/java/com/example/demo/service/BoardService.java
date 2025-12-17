@@ -11,9 +11,12 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.example.demo.dto.BoardCreateRequestDto;
 import com.example.demo.dto.BoardDetailResponseDto;
 import com.example.demo.dto.BoardListResponseDto;
+import com.example.demo.dto.BoardUpdateRequestDto;
 import com.example.demo.entity.Board;
+import com.example.demo.entity.Role;
 import com.example.demo.entity.User;
 import com.example.demo.exception.UnauthorizedAccessException;
 import com.example.demo.repository.BoardRepository;
@@ -25,6 +28,7 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+
 public class BoardService {
 	
 	private final BoardRepository boardRepository;
@@ -120,7 +124,7 @@ public class BoardService {
 				
 				// 🚨 마스킹된 작성자 정보 주입
 				.authorName(finalName)
-				.authorUserId(finalUserId)
+				.authorId(finalUserId)
 				.authorNo(board.getAuthorNo())
 				.build();
 	}
@@ -184,5 +188,112 @@ public class BoardService {
         
         return board;
     }
-	
+    /**
+     * REST API용 게시글 목록 조회 (페이징)
+     *
+     * @param pageable 페이징 정보
+     * @return Page<Board> 페이징된 게시글 목록
+     */
+    @Transactional(readOnly = true)
+    public Page<Board> getBoardsForApi(Pageable pageable) {
+        return boardRepository.findAllByOrderByCreateDtDesc(pageable);
+    }
+
+    /**
+     * REST API용 게시글 상세 조회 및 조회수 증가
+     *
+     * @param boardNo 게시글 번호
+     * @return Board 엔티티
+     * @throws IllegalArgumentException 게시글을 찾을 수 없는 경우
+     */
+    @Transactional
+    public Board getBoardForApi(Long boardNo) {
+        Board board = boardRepository.findById(boardNo)
+                .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다: " + boardNo));
+
+        // 조회수 증가
+        board.setViewCnt(board.getViewCnt() + 1);
+        boardRepository.save(board);
+
+        return board;
+    }
+
+    /**
+     * REST API용 게시글 작성
+     *
+     * @param createRequest 게시글 작성 요청 DTO
+     * @param authorNo 작성자 번호 (JWT에서 추출)
+     * @return 생성된 Board 엔티티
+     */
+    @Transactional
+    public Board createBoardForApi(BoardCreateRequestDto createRequest, Long authorNo) {
+        Board board = Board.builder()
+                .title(createRequest.getTitle())
+                .content(createRequest.getContent())
+                .authorNo(authorNo)
+                .viewCnt(0)
+                .build();
+
+        return boardRepository.save(board);
+    }
+
+    /**
+     * REST API용 게시글 수정 (작성자 권한 체크 포함)
+     *
+     * @param boardNo 게시글 번호
+     * @param updateRequest 수정 요청 DTO
+     * @param currentUserId 현재 로그인한 사용자 ID
+     * @return 수정된 Board 엔티티
+     * @throws IllegalArgumentException 게시글을 찾을 수 없는 경우
+     * @throws IllegalStateException 수정 권한이 없는 경우
+     */
+    @Transactional
+    public Board updateBoardForApi(Long boardNo, BoardUpdateRequestDto updateRequest, String currentUserId) {
+        Board board = boardRepository.findById(boardNo)
+                .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다: " + boardNo));
+
+        // 작성자 권한 체크
+        User author = userRepository.findById(board.getAuthorNo())
+                .orElseThrow(() -> new IllegalArgumentException("작성자를 찾을 수 없습니다"));
+
+        if (!author.getUserId().equals(currentUserId)) {
+            throw new IllegalStateException("게시글 수정 권한이 없습니다");
+        }
+
+        // 게시글 수정 (Builder 패턴 사용)
+     // 기존 객체의 필드만 수정
+        board.setTitle(updateRequest.getTitle());
+        board.setContent(updateRequest.getContent());
+        // modifyDt는 BaseEntity의 @LastModifiedDate가 자동 처리
+
+        return boardRepository.save(board);
+    }
+
+    /**
+     * REST API용 게시글 삭제 (작성자 + ADMIN 권한 체크 포함)
+     *
+     * @param boardNo 게시글 번호
+     * @param currentUserId 현재 로그인한 사용자 ID
+     * @param currentUserRole 현재 로그인한 사용자 권한
+     * @throws IllegalArgumentException 게시글을 찾을 수 없는 경우
+     * @throws IllegalStateException 삭제 권한이 없는 경우
+     */
+    @Transactional
+    public void deleteBoardForApi(Long boardNo, String currentUserId, Role currentUserRole) {
+        Board board = boardRepository.findById(boardNo)
+                .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다: " + boardNo));
+
+        // 권한 체크: 작성자 또는 ADMIN만 삭제 가능
+        User author = userRepository.findById(board.getAuthorNo())
+                .orElseThrow(() -> new IllegalArgumentException("작성자를 찾을 수 없습니다"));
+
+        boolean isAuthor = author.getUserId().equals(currentUserId);
+        boolean isAdmin = currentUserRole == Role.ADMIN;
+
+        if (!isAuthor && !isAdmin) {
+            throw new IllegalStateException("게시글 삭제 권한이 없습니다");
+        }
+
+        boardRepository.delete(board);
+    }
 }

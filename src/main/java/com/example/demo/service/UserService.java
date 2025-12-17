@@ -1,5 +1,6 @@
 package com.example.demo.service;
 
+import com.example.demo.dto.SignupRequestDto;
 import com.example.demo.dto.UserListDto;
 import com.example.demo.dto.UserSignupDto;
 import com.example.demo.entity.Role;
@@ -108,6 +109,67 @@ public class UserService {
                             .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다: " + userId));
 
             return user.getName();
+    }
+
+    /**
+     * 사용자 ID로 User 엔티티 전체 조회 (REST API용)
+     *
+     * @param userId 로그인 ID
+     * @return User 엔티티 객체
+     * @throws UsernameNotFoundException 사용자를 찾을 수 없는 경우
+     */
+    @Transactional(readOnly = true)
+    public User getUserByUserId(String userId) {
+        return userRepository.findByUserId(userId)
+                .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다: " + userId));
+    }
+    /**
+     * REST API 회원가입 처리
+     *
+     * @param signupRequest REST API 회원가입 요청 DTO
+     * @return 생성된 User 엔티티
+     */
+    @Transactional
+    public User create(SignupRequestDto signupRequest) {
+        // 1. 중복 아이디 체크
+        if (userRepository.findByUserId(signupRequest.getUserId()).isPresent()) {
+            throw new IllegalStateException("이미 사용 중인 아이디입니다.");
+        }
+
+        // 2. User 엔티티 생성
+        User user = User.builder()
+                .userId(signupRequest.getUserId())
+                .userPw(passwordEncoder.encode(signupRequest.getPassword()))
+                .name(signupRequest.getName())
+                .email(signupRequest.getEmail())
+                .role(Role.GUEST)
+                .build();
+
+        // 3. 저장 및 반환
+        return userRepository.save(user);
+    }
+    
+    /**
+     * REST API용 모든 사용자 목록 조회 (User 엔티티 반환)
+     *
+     * @return User 엔티티 리스트
+     */
+    @Transactional(readOnly = true)
+    public List<User> getAllUsersForApi() {
+        return userRepository.findAllByOrderByCreateDtDesc();
+    }
+
+    /**
+     * 사용자 번호로 User 엔티티 조회 (REST API용)
+     *
+     * @param userNo 사용자 번호
+     * @return User 엔티티
+     * @throws IllegalArgumentException 사용자를 찾을 수 없는 경우
+     */
+    @Transactional(readOnly = true)
+    public User getUserByUserNo(Long userNo) {
+        return userRepository.findById(userNo)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다: " + userNo));
     }
 
     /**

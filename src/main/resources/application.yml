@@ -22,4 +22,9 @@ spring:
     # 실행되는 SQL 쿼리를 콘솔에 출력합니다.
     show-sql: true
     generate-ddl: true
+  # JWT 토큰 설정
+  jwt:
+    secret: myBoardProjectSecretKey123456789012345678901234567890  # 32자 이상의 비밀키
+    access-token-expiration: 3600000    # Access Token 만료시간 (1시간)
+    refresh-token-expiration: 604800000 # Refresh Token 만료시간 (7일)
 # H2 Console 관련 설정은 필요 없으므로 생략했습니다.

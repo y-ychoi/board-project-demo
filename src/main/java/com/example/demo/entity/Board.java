@@ -16,6 +16,7 @@ import lombok.Setter;
 @Table(name="TB_BOARD")
 @Comment("게시판 테이블")
 @Getter
+@Setter
 @Builder // 게시글 생성 시 사용
 @NoArgsConstructor(access= AccessLevel.PROTECTED)
 @AllArgsConstructor
