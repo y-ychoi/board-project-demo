@@ -2,31 +2,34 @@
 
 ## 1. 프로젝트 소개
 
-Spring Boot와 Spring Security를 활용한 게시판 웹 애플리케이션입니다. 사용자 인증, 게시글 CRUD, 댓글 시스템을 포함한 완전한 게시판 기능을 제공합니다.
+Spring Boot와 Spring Security를 활용한 **하이브리드 게시판 애플리케이션**입니다. 전통적인 MVC 웹 인터페이스와 최신 REST API를 모두 제공하여, 웹 브라우저와 모바일 앱 등 다양한 클라이언트를 지원합니다.
 
 ## 2. 주요 기능
 
-### 사용자 관리
+### 웹 애플리케이션 (MVC)
 - 회원가입 및 로그인 (BCrypt 암호화)
 - Spring Security 기반 인증/인가
-- 개인정보 마스킹 처리
-
-### 게시판 기능
 - 게시글 CRUD (작성자 권한 검증)
 - 페이징 처리된 목록 조회
-- 조회수 증가 기능
+- 댓글 시스템 및 조회수 증가
+- 개인정보 마스킹 처리
 
-### 댓글 시스템
-- 댓글 작성 및 삭제
-- 작성자 권한 검증
+### REST API
+- **JWT 토큰 기반 인증** - Stateless 인증 방식
+- **완전한 RESTful API** - 11개 엔드포인트 제공
+- **자동 API 문서화** - Swagger/OpenAPI 3.0
+- **계층적 권한 체계** - GUEST/ADMIN 구분
+- **표준화된 JSON 응답** - 일관된 응답 형식
+- **모바일/SPA 지원** - 다양한 클라이언트 연동 가능
 
 ## 3. 기술 스택
 
 - **Backend**: Spring Boot 3.4.11, Java 17
 - **Database**: MySQL 8.0
 - **ORM**: Spring Data JPA, Hibernate
-- **Security**: Spring Security 6
+- **Security**: Spring Security 6 + JWT
 - **Template Engine**: Thymeleaf
+- **API Documentation**: SpringDoc OpenAPI 3.0 (Swagger)
 - **Build Tool**: Maven
 - **기타**: Lombok, Spring Boot DevTools
 
@@ -55,8 +58,9 @@ CREATE DATABASE demo_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ```
 
 ### 접속 정보
-- URL: http://localhost:8080
-- 회원가입 후 로그인하여 게시판 기능 이용
+- **웹 애플리케이션**: http://localhost:8080
+- **REST API 문서**: http://localhost:8080/swagger-ui.html
+- **OpenAPI JSON**: http://localhost:8080/v3/api-docs
 
 ## 5. 프로젝트 구조
 
@@ -65,20 +69,35 @@ board-project-demo/
 ├── src/main/java/com/example/demo/
 │   ├── BoardProjectDemoApplication.java    # 메인 애플리케이션 클래스
 │   ├── config/
-│   │   └── SecurityConfig.java             # Spring Security 설정
-│   ├── controller/                         # 웹 요청 처리
+│   │   ├── SecurityConfig.java             # MVC 보안 설정
+│   │   ├── RestSecurityConfig.java         # REST API 보안 설정
+│   │   ├── SwaggerConfig.java              # Swagger 설정
+│   │   └── JwtConfig.java                  # JWT 설정
+│   ├── controller/                         # MVC 웹 요청 처리
 │   │   ├── BoardController.java
 │   │   ├── CommentController.java
-│   │   └── UserController.java
+│   │   ├── UserController.java
+│   │   ├── AuthRestController.java         # REST 인증 API
+│   │   ├── UserRestController.java         # REST 사용자 API
+│   │   ├── BoardRestController.java        # REST 게시판 API
+│   │   └── CommentRestController.java      # REST 댓글 API
 │   ├── dto/                               # 데이터 전송 객체
-│   │   ├── BoardDetailResponseDto.java
+│   │   ├── BoardDetailResponseDto.java     # MVC용 DTO
 │   │   ├── BoardListResponseDto.java
-│   │   └── CommentResponseDto.java
+│   │   ├── CommentResponseDto.java
+│   │   ├── ApiResponseDto.java             # REST API 공통 응답
+│   │   ├── LoginRequestDto.java            # REST API 요청 DTO
+│   │   ├── LoginResponseDto.java           # REST API 응답 DTO
+│   │   ├── SignupRequestDto.java
+│   │   ├── BoardCreateRequestDto.java
+│   │   ├── BoardUpdateRequestDto.java
+│   │   └── CommentCreateRequestDto.java
 │   ├── entity/                            # JPA 엔티티
 │   │   ├── BaseEntity.java
 │   │   ├── Board.java
 │   │   ├── Comment.java
-│   │   └── User.java
+│   │   ├── User.java
+│   │   └── Role.java
 │   ├── repository/                        # 데이터 접근 계층
 │   │   ├── BoardRepository.java
 │   │   ├── CommentRepository.java
@@ -89,8 +108,12 @@ board-project-demo/
 │   │   └── UserService.java
 │   ├── security/                          # 보안 관련
 │   │   └── UserSecurityService.java
+│   ├── jwt/                               # JWT 관련
+│   │   ├── JwtTokenProvider.java
+│   │   └── JwtAuthenticationFilter.java
 │   ├── exception/                         # 예외 처리
-│   │   └── UnauthorizedAccessException.java
+│   │   ├── UnauthorizedAccessException.java
+│   │   └── RestExceptionHandler.java      # REST API 예외 처리
 │   └── util/                             # 유틸리티
 │       └── MaskingUtil.java
 ├── src/main/resources/
@@ -101,6 +124,9 @@ board-project-demo/
 │       ├── login_form.html
 │       ├── signup_form.html
 │       └── board/
+├── REST_API_개발계획서.md                 # REST API 개발 계획
+├── REST_API_구현진행상황.md               # 구현 진행 현황
+├── REST_API_사용가이드.md                 # API 사용 가이드
 └── pom.xml                               # Maven 설정
 ```
 
@@ -165,15 +191,23 @@ board-project-demo/
 HTTP Request → SecurityFilterChain → Authentication → Authorization → Controller
 ```
 
+**MVC 보안 (세션 기반):**
 - **인증 필터**: 사용자 자격 증명 검증
 - **인가 필터**: URL 패턴별 접근 권한 확인
 - **CSRF 필터**: Cross-Site Request Forgery 공격 방지
 - **세션 관리**: 세션 기반 상태 유지
 
+**REST API 보안 (JWT 기반):**
+- **JWT 인증 필터**: JWT 토큰 검증 및 사용자 인증
+- **Stateless 인증**: 서버에 세션 상태 저장하지 않음
+- **Bearer 토큰**: Authorization 헤더를 통한 토큰 전송
+- **토큰 만료 관리**: Access Token (1시간) + Refresh Token (7일)
+
 #### 보안 구성요소
 - **PasswordEncoder**: BCrypt 알고리즘을 통한 단방향 암호화
 - **UserDetailsService**: 사용자 정보 로딩 및 권한 부여
 - **SecurityContext**: 인증된 사용자 정보 저장 및 관리
+- **JwtTokenProvider**: JWT 토큰 생성, 검증 및 사용자 정보 추출
 
 ### 데이터 플로우
 
@@ -191,7 +225,9 @@ Client Response ← Thymeleaf ← DTO ← Entity ← JPA/Hibernate
 
 ## 7. API 엔드포인트
 
-### 사용자 관리
+### 웹 애플리케이션 (MVC)
+
+#### 사용자 관리
 | Method | URL | 설명 | 인증 필요 |
 |--------|-----|------|----------|
 | GET | `/user/signup` | 회원가입 폼 | X |
@@ -200,7 +236,7 @@ Client Response ← Thymeleaf ← DTO ← Entity ← JPA/Hibernate
 | POST | `/user/login` | 로그인 처리 | X |
 | POST | `/user/logout` | 로그아웃 | O |
 
-### 게시판 관리
+#### 게시판 관리
 | Method | URL | 설명 | 인증 필요 |
 |--------|-----|------|----------|
 | GET | `/board/list` | 게시글 목록 (페이징) | X |
@@ -211,32 +247,89 @@ Client Response ← Thymeleaf ← DTO ← Entity ← JPA/Hibernate
 | POST | `/board/modify/{id}` | 게시글 수정 처리 | O |
 | POST | `/board/delete/{id}` | 게시글 삭제 | O |
 
-### 댓글 관리
+#### 댓글 관리
 | Method | URL | 설명 | 인증 필요 |
 |--------|-----|------|----------|
 | POST | `/comment/create` | 댓글 작성 | O |
 | POST | `/comment/delete/{id}` | 댓글 삭제 | O |
 
+### REST API
+
+#### 인증 API
+| Method | URL | 설명 | 인증 필요 |
+|--------|-----|------|----------|
+| POST | `/api/v1/auth/signup` | 회원가입 | X |
+| POST | `/api/v1/auth/login` | 로그인 (JWT 토큰 발급) | X |
+
+#### 사용자 관리 API
+| Method | URL | 설명 | 권한 |
+|--------|-----|------|------|
+| GET | `/api/v1/users` | 회원 목록 조회 | ADMIN |
+| GET | `/api/v1/users/me` | 내 정보 조회 | USER |
+| PUT | `/api/v1/users/{userNo}/role` | 권한 변경 | ADMIN |
+
+#### 게시판 API
+| Method | URL | 설명 | 권한 |
+|--------|-----|------|------|
+| GET | `/api/v1/boards` | 게시글 목록 (페이징) | ALL |
+| GET | `/api/v1/boards/{boardNo}` | 게시글 상세 조회 | ALL |
+| POST | `/api/v1/boards` | 게시글 작성 | USER |
+| PUT | `/api/v1/boards/{boardNo}` | 게시글 수정 | OWNER만 |
+| DELETE | `/api/v1/boards/{boardNo}` | 게시글 삭제 | OWNER/ADMIN |
+
+#### 댓글 API
+| Method | URL | 설명 | 권한 |
+|--------|-----|------|------|
+| GET | `/api/v1/boards/{boardNo}/comments` | 댓글 목록 | ALL |
+| POST | `/api/v1/boards/{boardNo}/comments` | 댓글 작성 | USER |
+| DELETE | `/api/v1/boards/{boardNo}/comments/{commentNo}` | 댓글 삭제 | OWNER/ADMIN |
+
 ### 요청/응답 예시
 
-#### 게시글 목록 조회
+#### 웹 애플리케이션
 ```
 GET /board/list?page=0&size=10
 
 Response: HTML (Thymeleaf 렌더링)
 - 페이징된 게시글 목록
 - 페이지네이션 UI
-- 검색 기능 (향후 구현 예정)
 ```
 
-#### 게시글 작성
-```
-POST /board/create
-Content-Type: application/x-www-form-urlencoded
+#### REST API
+```bash
+# 로그인
+POST /api/v1/auth/login
+Content-Type: application/json
 
-title=게시글 제목&content=게시글 내용
+{
+  "userId": "testuser01",
+  "password": "password123"
+}
 
-Response: Redirect to /board/list
+# 응답
+{
+  "success": true,
+  "data": {
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "tokenType": "Bearer",
+    "expiresIn": 3600,
+    "user": {
+      "userNo": 1,
+      "userId": "testuser01",
+      "role": "GUEST"
+    }
+  }
+}
+
+# 게시글 작성
+POST /api/v1/boards
+Authorization: Bearer {토큰}
+Content-Type: application/json
+
+{
+  "title": "게시글 제목",
+  "content": "게시글 내용입니다."
+}
 ```
 
 ---
@@ -312,7 +405,6 @@ TB_COMMENT (
 - 페이지 로딩 속도 개선
 
 #### 보안 강화
-- JWT 토큰 기반 인증
 - OAuth2 소셜 로그인
 - API Rate Limiting
 - XSS 방지 강화
