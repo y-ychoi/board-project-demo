@@ -196,7 +196,15 @@ public class BoardService {
      */
     @Transactional(readOnly = true)
     public Page<Board> getBoardsForApi(Pageable pageable) {
-        return boardRepository.findAllByOrderByCreateDtDesc(pageable);
+    	Page<Board> boards = boardRepository.findAllByOrderByCreateDtDesc(pageable);
+
+        // 각 게시글에 작성자 정보 설정
+        boards.getContent().forEach(board -> {
+            User authorUser = userRepository.findById(board.getAuthorNo()).orElse(null);
+            board.setAuthorUser(authorUser);
+        });
+
+        return boards;
     }
 
     /**
@@ -214,6 +222,9 @@ public class BoardService {
         // 조회수 증가
         board.setViewCnt(board.getViewCnt() + 1);
         boardRepository.save(board);
+        
+        User authorUser = userRepository.findById(board.getAuthorNo()).orElse(null);
+        board.setAuthorUser(authorUser);
 
         return board;
     }
@@ -234,7 +245,13 @@ public class BoardService {
                 .viewCnt(0)
                 .build();
 
-        return boardRepository.save(board);
+        Board savedBoard = boardRepository.save(board);
+
+        // 작성자 정보 설정
+        User authorUser = userRepository.findById(authorNo).orElse(null);
+        savedBoard.setAuthorUser(authorUser);
+
+        return savedBoard;
     }
 
     /**
@@ -266,7 +283,12 @@ public class BoardService {
         board.setContent(updateRequest.getContent());
         // modifyDt는 BaseEntity의 @LastModifiedDate가 자동 처리
 
-        return boardRepository.save(board);
+        Board savedBoard = boardRepository.save(board);
+
+        // 작성자 정보 설정 (이미 조회한 author 사용)
+        savedBoard.setAuthorUser(author);
+
+        return savedBoard;
     }
 
     /**

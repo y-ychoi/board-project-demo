@@ -1,5 +1,7 @@
 package com.example.demo.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -21,6 +23,7 @@ public class Comment extends BaseEntity {
     
     @ManyToOne 
     @JoinColumn(name = "board_no") // DB 테이블의 외래 키 컬럼 이름 (board_no)을 지정합니다.
+    @JsonIgnore 
     private Board board;
 
     @Column(name = "author_no", nullable = false)

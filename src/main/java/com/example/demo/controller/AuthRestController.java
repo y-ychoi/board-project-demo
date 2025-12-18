@@ -8,6 +8,10 @@ import com.example.demo.entity.User;
 import com.example.demo.jwt.JwtTokenProvider;
 import com.example.demo.service.UserService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -29,6 +33,7 @@ import org.springframework.web.bind.annotation.*;
  * @RestController: @Controller + @ResponseBody
  * 모든 메서드가 JSON 응답을 반환
  */
+@Tag(name = "🔐 Authentication", description = "인증 API")
 @RestController
 @RequestMapping("/api/v1/auth")  // 기본 URL: /api/v1/auth
 @RequiredArgsConstructor
@@ -45,6 +50,10 @@ public class AuthRestController {
      * @param bindingResult 입력값 검증 결과
      * @return JWT 토큰과 사용자 정보가 포함된 응답
      */
+    @Operation(summary = "로그인", description = "사용자 인증 후 JWT 토큰을 발급합니다")
+    @ApiResponse(responseCode = "200", description = "로그인 성공")
+    @ApiResponse(responseCode = "400", description = "입력값 오류")
+    @ApiResponse(responseCode = "401", description = "인증 실패")
     @PostMapping("/login")
     public ResponseEntity<ApiResponseDto<LoginResponseDto>> login(
             @Valid @RequestBody LoginRequestDto loginRequest,
@@ -108,6 +117,9 @@ public class AuthRestController {
      * @param bindingResult 입력값 검증 결과
      * @return 회원가입 결과 응답
      */
+    @Operation(summary = "회원가입", description = "새로운 사용자를 등록합니다")
+    @ApiResponse(responseCode = "200", description = "회원가입 성공")
+    @ApiResponse(responseCode = "400", description = "입력값 오류 또는 중복 아이디")
     @PostMapping("/signup")
     public ResponseEntity<ApiResponseDto<String>> signup(
             @Valid @RequestBody SignupRequestDto signupRequest,

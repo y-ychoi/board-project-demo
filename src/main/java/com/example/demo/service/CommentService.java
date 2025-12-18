@@ -1,10 +1,13 @@
 package com.example.demo.service;
 
+import com.example.demo.dto.CommentCreateRequestDto;
 import com.example.demo.dto.CommentResponseDto;
 import com.example.demo.entity.Board;
 import com.example.demo.entity.Comment;
+import com.example.demo.entity.Role;
 import com.example.demo.entity.User;
 import com.example.demo.exception.UnauthorizedAccessException;
+import com.example.demo.repository.BoardRepository;
 import com.example.demo.repository.CommentRepository;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.util.MaskingUtil;
@@ -22,6 +25,7 @@ public class CommentService {
 
     private final CommentRepository commentRepository;
     private final UserRepository userRepository;
+    private final BoardRepository boardRepository;
 
     /**
      * 댓글을 저장합니다.
@@ -123,5 +127,77 @@ public class CommentService {
         // Comment 엔티티에 updateContent(String content) 메서드가 정의되어 있어야 합니다.
         
         // (Transactional 어노테이션 덕분에 save() 호출 없이 트랜잭션 종료 시 자동 반영됨)
+    }
+    
+    /**
+     * REST API용 댓글 목록 조회
+     *
+     * @param boardNo 게시글 번호
+     * @return List<Comment> 댓글 목록 (생성일시 오름차순)
+     */
+    @Transactional(readOnly = true)
+    public List<Comment> getCommentsForApi(Long boardNo) {
+        return commentRepository.findAllByBoardBoardNoOrderByCreateDtAsc(boardNo);
+    }
+
+    /**
+     * REST API용 댓글 작성
+     *
+     * @param boardNo 게시글 번호
+     * @param createRequest 댓글 작성 요청 DTO
+     * @param authorNo 작성자 번호 (JWT에서 추출)
+     * @return Comment 생성된 댓글 엔티티
+     */
+    @Transactional
+    public Comment createCommentForApi(Long boardNo, CommentCreateRequestDto createRequest, Long authorNo) {
+        // 게시글 존재 확인
+        Board board = boardRepository.findById(boardNo)
+                .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다: " + boardNo));
+
+        // 댓글 엔티티 생성
+        Comment comment = Comment.builder()
+                .content(createRequest.getContent())
+                .board(board)
+                .authorNo(authorNo)
+                .build();
+
+        return commentRepository.save(comment);
+    }
+
+    /**
+     * REST API용 댓글 삭제 (권한 체크 포함)
+     *
+     * @param boardNo 게시글 번호
+     * @param commentNo 댓글 번호
+     * @param currentUserId 현재 로그인한 사용자 ID
+     * @param currentUserRole 현재 로그인한 사용자 권한
+     */
+    @Transactional
+    public void deleteCommentForApi(Long boardNo, Long commentNo, String currentUserId, Role currentUserRole) {
+        // 게시글 존재 확인
+        boardRepository.findById(boardNo)
+                .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다: " + boardNo));
+
+        // 댓글 존재 확인
+        Comment comment = commentRepository.findById(commentNo)
+                .orElseThrow(() -> new IllegalArgumentException("댓글을 찾을 수 없습니다: " + commentNo));
+
+        // 댓글이 해당 게시글에 속하는지 확인
+        if (!comment.getBoard().getBoardNo().equals(boardNo)) {
+            throw new IllegalArgumentException("댓글이 해당 게시글에 속하지 않습니다");
+        }
+
+        // 권한 체크: 작성자 또는 ADMIN만 삭제 가능
+        User author = userRepository.findById(comment.getAuthorNo())
+                .orElseThrow(() -> new IllegalArgumentException("작성자를 찾을 수 없습니다"));
+
+        boolean isAuthor = author.getUserId().equals(currentUserId);
+        boolean isAdmin = currentUserRole == Role.ADMIN;
+
+        if (!isAuthor && !isAdmin) {
+            throw new IllegalStateException("댓글 삭제 권한이 없습니다");
+        }
+
+        commentRepository.delete(comment);
     }
 }

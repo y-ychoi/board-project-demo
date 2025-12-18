@@ -62,6 +62,12 @@ public class RestSecurityConfig {
             	    .requestMatchers(HttpMethod.PUT, "/api/v1/boards/*").hasAnyRole("GUEST", "ADMIN")
             	    .requestMatchers(HttpMethod.DELETE, "/api/v1/boards/*").hasAnyRole("GUEST", "ADMIN")
 
+            	    .requestMatchers(HttpMethod.GET, "/api/v1/boards/*/comments").permitAll()
+
+            	    // 댓글 작성/삭제는 인증된 사용자만
+            	    .requestMatchers(HttpMethod.POST, "/api/v1/boards/*/comments").hasAnyRole("GUEST", "ADMIN")
+            	    .requestMatchers(HttpMethod.DELETE, "/api/v1/boards/*/comments/*").hasAnyRole("GUEST", "ADMIN")
+            	    
             	    // 나머지 API는 인증 필요
             	    .anyRequest().authenticated()
             )

@@ -6,6 +6,11 @@ import com.example.demo.dto.UserRoleUpdateRequestDto;
 import com.example.demo.entity.User;
 import com.example.demo.service.UserService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -28,6 +33,7 @@ import java.util.stream.Collectors;
  *
  * 모든 API는 JWT 토큰 인증 필요
  */
+@Tag(name = "👥 User Management", description = "사용자 관리 API")
 @RestController
 @RequestMapping("/api/v1/users")
 @RequiredArgsConstructor
@@ -41,6 +47,10 @@ public class UserRestController {
      * @param authentication 현재 로그인한 사용자 정보
      * @return 회원 목록과 현재 사용자를 맨 위로 정렬한 응답
      */
+    @Operation(summary = "회원 목록 조회", description = "모든 회원 목록을 조회합니다 (ADMIN 전용)")
+    @SecurityRequirement(name = "bearerAuth")
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    @ApiResponse(responseCode = "403", description = "권한 없음")
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")  // ADMIN 권한만 접근 가능
     public ResponseEntity<ApiResponseDto<List<UserListResponseDto>>> getAllUsers(
@@ -90,6 +100,11 @@ public class UserRestController {
      * @param authentication 현재 로그인한 사용자 정보
      * @return 권한 변경 결과 응답
      */
+    @Operation(summary = "사용자 권한 변경", description = "사용자의 권한을 변경합니다 (ADMIN 전용)")
+    @SecurityRequirement(name = "bearerAuth")
+    @ApiResponse(responseCode = "200", description = "변경 성공")
+    @ApiResponse(responseCode = "400", description = "잘못된 요청")
+    @ApiResponse(responseCode = "403", description = "권한 없음")
     @PutMapping("/{userNo}/role")
     @PreAuthorize("hasRole('ADMIN')")  // ADMIN 권한만 접근 가능
     public ResponseEntity<ApiResponseDto<String>> updateUserRole(
@@ -152,6 +167,10 @@ public class UserRestController {
      * @param authentication 현재 로그인한 사용자 정보
      * @return 현재 사용자의 정보
      */
+    @Operation(summary = "내 정보 조회", description = "현재 로그인한 사용자의 정보를 조회합니다")
+    @SecurityRequirement(name = "bearerAuth")
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    @ApiResponse(responseCode = "401", description = "인증 필요")
     @GetMapping("/me")
     @PreAuthorize("isAuthenticated()")  // 로그인한 사용자만 접근 가능
     public ResponseEntity<ApiResponseDto<UserListResponseDto>> getMyInfo(
