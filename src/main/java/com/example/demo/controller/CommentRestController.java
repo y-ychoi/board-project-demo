@@ -1,7 +1,9 @@
 package com.example.demo.controller;
 
+import java.time.Duration;
 import java.util.List;
 
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -10,10 +12,12 @@ import org.springframework.web.bind.annotation.*;
 
 import com.example.demo.dto.ApiResponseDto;
 import com.example.demo.dto.CommentCreateRequestDto;
+import com.example.demo.dto.CommentResponseDto;
 import com.example.demo.entity.Comment;
 import com.example.demo.entity.User;
 import com.example.demo.service.CommentService;
 import com.example.demo.service.UserService;
+
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -40,7 +44,6 @@ public class CommentRestController {
 
     private final CommentService commentService;
     private final UserService userService;
-
     /**
      * 댓글 목록 조회 API
      *
@@ -55,11 +58,13 @@ public class CommentRestController {
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @ApiResponse(responseCode = "404", description = "게시글을 찾을 수 없음")
     @GetMapping
-    public ResponseEntity<ApiResponseDto<List<Comment>>> getComments(
+    public ResponseEntity<ApiResponseDto<List<CommentResponseDto>>> getComments(
             @Parameter(description = "게시글 번호") @PathVariable Long boardNo) {
 
-        List<Comment> comments = commentService.getCommentsForApi(boardNo);
-        return ResponseEntity.ok(ApiResponseDto.success(comments, "댓글 목록 조회 성공"));
+    	List<CommentResponseDto> comments = commentService.getCommentList(boardNo);
+    	return ResponseEntity.ok()
+                .cacheControl(CacheControl.maxAge(Duration.ofSeconds(30)))
+                .body(ApiResponseDto.success(comments, "댓글 목록 조회 성공"));
     }
 
     /**
@@ -94,6 +99,7 @@ public class CommentRestController {
         Comment comment = commentService.createCommentForApi(boardNo, createRequest, user.getUserNo());
 
         return ResponseEntity.status(HttpStatus.CREATED)
+                .cacheControl(CacheControl.noCache())
                 .body(ApiResponseDto.success(comment, "댓글 작성 성공"));
     }
 
@@ -128,6 +134,8 @@ public class CommentRestController {
         // 댓글 삭제 처리 (권한 체크 포함)
         commentService.deleteCommentForApi(boardNo, commentNo, userId, user.getRole());
 
-        return ResponseEntity.ok(ApiResponseDto.success(null, "댓글 삭제 성공"));
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.noCache())
+                .body(ApiResponseDto.success(null, "댓글 삭제 성공"));
     }
 }

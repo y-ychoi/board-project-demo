@@ -22,9 +22,21 @@ spring:
     # 실행되는 SQL 쿼리를 콘솔에 출력합니다.
     show-sql: true
     generate-ddl: true
+  web:
+    resources:
+      cache:
+        cachecontrol:
+          max-age: 3600  # 정적 리소스 캐시 (1시간)
+          cache-public: true
   # JWT 토큰 설정
-  jwt:
-    secret: myBoardProjectSecretKey123456789012345678901234567890  # 32자 이상의 비밀키
-    access-token-expiration: 3600000    # Access Token 만료시간 (1시간)
-    refresh-token-expiration: 604800000 # Refresh Token 만료시간 (7일)
+jwt:
+  secret: myBoardProjectSecretKey123456789012345678901234567890  # 32자 이상의 비밀키
+  accessTokenExpiration: 3600000    # Access Token 만료시간 (1시간)
+  refreshTokenExpiration: 604800000 # Refresh Token 만료시간 (7일)
+# 서버 설정 (추가)
+server:
+  compression:
+    enabled: true  # 응답 압축 활성화
+    mime-types: application/json,text/html,text/xml,text/plain,application/javascript,text/css
+
 # H2 Console 관련 설정은 필요 없으므로 생략했습니다.

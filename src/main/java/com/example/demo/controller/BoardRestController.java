@@ -1,8 +1,10 @@
 package com.example.demo.controller;
 
+import java.time.Duration;
+import java.time.Instant;
+
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -11,17 +13,21 @@ import org.springframework.web.bind.annotation.*;
 
 import com.example.demo.dto.ApiResponseDto;
 import com.example.demo.dto.BoardCreateRequestDto;
+import com.example.demo.dto.BoardDetailResponseDto;
+import com.example.demo.dto.BoardListResponseDto;
 import com.example.demo.dto.BoardUpdateRequestDto;
 import com.example.demo.entity.Board;
 import com.example.demo.entity.User;
 import com.example.demo.service.BoardService;
 import com.example.demo.service.UserService;
+import com.example.demo.util.CacheUtil;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -42,6 +48,7 @@ public class BoardRestController {
 
     // 게시글 비즈니스 로직 처리를 위한 서비스
     private final BoardService boardService;
+    private final CacheUtil cacheUtil; 
 
     // 사용자 정보 조회를 위한 서비스 (JWT에서 추출한 userId로 User 엔티티 조회)
     private final UserService userService;
@@ -59,21 +66,21 @@ public class BoardRestController {
     @Operation(summary = "게시글 목록 조회", description = "페이징된 게시글 목록을 조회합니다")
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping  // GET /api/v1/boards
-    public ResponseEntity<ApiResponseDto<Page<Board>>> getBoards(
+    public ResponseEntity<ApiResponseDto<Page<BoardListResponseDto>>> getBoards(
             @Parameter(description = "페이지 번호 (0부터 시작)")
             @RequestParam(defaultValue = "0") int page,  // 기본값: 첫 번째 페이지
 
             @Parameter(description = "페이지 크기")
             @RequestParam(defaultValue = "20") int size) {  // 기본값: 20개씩
 
-        // Spring Data JPA의 Pageable 객체 생성 (페이지 번호, 크기 설정)
-        Pageable pageable = PageRequest.of(page, size);
 
         // BoardService에서 페이징된 게시글 목록 조회
-        Page<Board> boards = boardService.getBoardsForApi(pageable);
+        Page<BoardListResponseDto> boards =  boardService.getBoardList(page, null);
 
         // 표준화된 JSON 응답 형식으로 반환
-        return ResponseEntity.ok(ApiResponseDto.success(boards, "게시글 목록 조회 성공"));
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.maxAge(Duration.ofMinutes(2)))
+                .body(ApiResponseDto.success(boards, "게시글 목록 조회 성공"));
     }
 
     /**
@@ -89,15 +96,38 @@ public class BoardRestController {
     @Operation(summary = "게시글 상세 조회", description = "특정 게시글의 상세 정보를 조회합니다 (조회수 증가)")
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @ApiResponse(responseCode = "404", description = "게시글을 찾을 수 없음")
-    @GetMapping("/{boardNo}")  // GET /api/v1/boards/1
-    public ResponseEntity<ApiResponseDto<Board>> getBoard(
+    @GetMapping("/{boardNo}")
+    public ResponseEntity<ApiResponseDto<BoardDetailResponseDto>> getBoard(
             @Parameter(description = "게시글 번호")
-            @PathVariable Long boardNo) {  // URL 경로에서 게시글 번호 추출
+            @PathVariable Long boardNo,
+            HttpServletRequest request) {
 
-        // BoardService에서 게시글 조회 및 조회수 증가 처리
-        Board board = boardService.getBoardForApi(boardNo);
+        BoardDetailResponseDto board = boardService.getBoardDetail(boardNo);
 
-        return ResponseEntity.ok(ApiResponseDto.success(board, "게시글 조회 성공"));
+        // ETag 생성
+        String etag = cacheUtil.generateETag(board.getBoardNo(), board.getModifyDt());
+        Instant lastModified = board.getModifyDt().atZone(java.time.ZoneId.systemDefault()).toInstant();
+
+        // 조건부 요청 헤더 확인
+        String ifNoneMatch = request.getHeader("If-None-Match");
+        long ifModifiedSince = request.getDateHeader("If-Modified-Since");
+
+        // 304 Not Modified 응답 조건 확인
+        if (cacheUtil.isNotModified(etag, ifNoneMatch) ||
+            cacheUtil.isNotModified(lastModified.toEpochMilli(), ifModifiedSince)) {
+
+            return ResponseEntity.status(HttpStatus.NOT_MODIFIED)
+                    .eTag(etag)
+                    .lastModified(lastModified)
+                    .build();
+        }
+
+        // 200 OK 응답 (캐시 헤더 포함)
+        return ResponseEntity.ok()
+                .eTag(etag)
+                .lastModified(lastModified)
+                .cacheControl(CacheControl.maxAge(Duration.ofMinutes(5)))
+                .body(ApiResponseDto.success(board, "게시글 조회 성공"));
     }
 
     /**
@@ -133,6 +163,7 @@ public class BoardRestController {
 
         // HTTP 201 Created 상태코드와 함께 생성된 게시글 정보 반환
         return ResponseEntity.status(HttpStatus.CREATED)
+        		.cacheControl(CacheControl.noCache())
                 .body(ApiResponseDto.success(board, "게시글 작성 성공"));
     }
 
@@ -168,7 +199,9 @@ public class BoardRestController {
         // 작성자가 아니면 IllegalStateException 발생 → RestExceptionHandler에서 403 처리
         Board board = boardService.updateBoardForApi(boardNo, updateRequest, userId);
 
-        return ResponseEntity.ok(ApiResponseDto.success(board, "게시글 수정 성공"));
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.noCache())
+                .body(ApiResponseDto.success(board, "게시글 수정 성공"));
     }
 
     /**
@@ -202,6 +235,8 @@ public class BoardRestController {
         boardService.deleteBoardForApi(boardNo, userId, user.getRole());
 
         // 삭제는 반환할 데이터가 없으므로 null과 성공 메시지만 반환
-        return ResponseEntity.ok(ApiResponseDto.success(null, "게시글 삭제 성공"));
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.noCache())
+                .body(ApiResponseDto.success(null, "게시글 삭제 성공"));
     }
 }

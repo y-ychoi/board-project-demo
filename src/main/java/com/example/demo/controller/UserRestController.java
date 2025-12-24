@@ -5,6 +5,7 @@ import com.example.demo.dto.UserListResponseDto;
 import com.example.demo.dto.UserRoleUpdateRequestDto;
 import com.example.demo.entity.User;
 import com.example.demo.service.UserService;
+import com.example.demo.util.CacheUtil;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -14,12 +15,14 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -40,6 +43,7 @@ import java.util.stream.Collectors;
 public class UserRestController {
 
     private final UserService userService;
+    private final CacheUtil cacheUtil; 
 
     /**
      * 회원 목록 조회 API (관리자 전용)
@@ -76,9 +80,10 @@ public class UserRestController {
                     .collect(Collectors.toList());
 
             // 4. 성공 응답 반환
-            return ResponseEntity.ok(
-                    ApiResponseDto.success(userList, "회원 목록 조회가 완료되었습니다.")
-            );
+            return ResponseEntity.ok()
+                    .cacheControl(CacheControl.maxAge(Duration.ofMinutes(10)))
+                    .body(ApiResponseDto.success(userList, "회원 목록 조회가 완료되었습니다."));
+
 
         } catch (Exception e) {
             // 5. 오류 발생 시 500 응답
@@ -138,9 +143,9 @@ public class UserRestController {
             userService.updateUserRole(userNo, request.getRole());
 
             // 4. 성공 응답 반환
-            return ResponseEntity.ok(
-                    ApiResponseDto.success("권한이 성공적으로 변경되었습니다.")
-            );
+            return ResponseEntity.ok()
+                    .cacheControl(CacheControl.noCache())
+                    .body(ApiResponseDto.success("권한이 성공적으로 변경되었습니다."));
 
         } catch (IllegalArgumentException e) {
             // 5. 사용자를 찾을 수 없는 경우
@@ -184,10 +189,14 @@ public class UserRestController {
             // 2. DTO로 변환
             UserListResponseDto userInfo = UserListResponseDto.from(currentUser);
 
-            // 3. 성공 응답 반환
-            return ResponseEntity.ok(
-                    ApiResponseDto.success(userInfo, "내 정보 조회가 완료되었습니다.")
-            );
+         // ETag 생성 (사용자 정보 기반)
+            String etag = cacheUtil.generateETag(currentUser.getUserNo(), currentUser.getModifyDt());
+
+            return ResponseEntity.ok()
+                    .eTag(etag)
+                    .cacheControl(CacheControl.maxAge(Duration.ofMinutes(30)))
+                    .body(ApiResponseDto.success(userInfo, "내 정보 조회가 완료되었습니다."));
+
 
         } catch (Exception e) {
             // 4. 오류 발생 시 500 응답

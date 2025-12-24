@@ -13,6 +13,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfigurationSource;
 
 /**
  * REST API 전용 보안 설정 클래스
@@ -31,6 +32,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class RestSecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final CorsConfigurationSource corsConfigurationSource;
 
     /**
      * REST API 전용 보안 필터 체인
@@ -43,6 +45,9 @@ public class RestSecurityConfig {
         http
             // REST API 경로만 이 설정 적용
             .securityMatcher("/api/**")
+
+            // CORS 설정 적용
+            .cors(cors -> cors.configurationSource(corsConfigurationSource))
 
             // 권한 설정
             .authorizeHttpRequests(auth -> auth
