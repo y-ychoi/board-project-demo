@@ -104,11 +104,14 @@
             document.getElementById('boardViews').textContent = `조회수: ${board.viewCnt}`;
             document.getElementById('boardContent').innerHTML = board.content.replace(/\n/g, '<br>');
             
-            // 작성자이거나 관리자인 경우 수정/삭제 버튼 표시
-            if (board.authorNo === user.userNo || user.role === 'ADMIN') {
-                document.getElementById('editBtn').style.display = 'inline-block';
-                document.getElementById('deleteBtn').style.display = 'inline-block';
-            }
+            // 작성자인 경우만 수정 버튼 표시, 삭제는 작성자 또는 관리자
+			if (board.authorNo === user.userNo) {
+    			document.getElementById('editBtn').style.display = 'inline-block';
+			}
+
+			if (board.authorNo === user.userNo || user.role === 'ADMIN') {
+    			document.getElementById('deleteBtn').style.display = 'inline-block';
+			}
             
             document.getElementById('boardDetail').style.display = 'block';
             document.getElementById('commentsSection').style.display = 'block';
@@ -179,6 +182,11 @@
                 app.errorHandler.handleError(error);
             }
         }
+        
+        // 게시글 수정 버튼
+		document.getElementById('editBtn').addEventListener('click', () => {
+    		window.location.href = `board-edit.html?id=${boardNo}`;
+		});
         
         // 게시글 삭제
         document.getElementById('deleteBtn').addEventListener('click', async () => {

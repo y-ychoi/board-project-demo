@@ -75,11 +75,11 @@ public class BoardRestController {
 
 
         // BoardService에서 페이징된 게시글 목록 조회
-        Page<BoardListResponseDto> boards =  boardService.getBoardList(page, null);
+        Page<BoardListResponseDto> boards =  boardService.getBoardList(page, size, null);
 
         // 표준화된 JSON 응답 형식으로 반환
         return ResponseEntity.ok()
-                .cacheControl(CacheControl.maxAge(Duration.ofMinutes(2)))
+                .cacheControl(CacheControl.noCache())
                 .body(ApiResponseDto.success(boards, "게시글 목록 조회 성공"));
     }
 

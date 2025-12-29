@@ -43,10 +43,10 @@ public class BoardService {
 	 */
 	@Transactional(readOnly = true)
 	// 🚨🚨🚨 currentUserId 파라미터를 사용합니다. 🚨🚨🚨
-	public Page<BoardListResponseDto> getBoardList(int page, String currentUserId) { 
+	public Page<BoardListResponseDto> getBoardList(int page,int size,  String currentUserId) { 
 	    
 	    // 페이지 설정 (PageRequest 직접 사용)
-	    Pageable pageable = PageRequest.of(page, 20, Sort.by("boardNo").descending());
+		Pageable pageable = PageRequest.of(page, size, Sort.by("boardNo").descending());
 	    
 	    Page<Board> boardPaging = boardRepository.findAll(pageable);
 	    

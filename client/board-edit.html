@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>게시글 수정 - Board App</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>게시글 수정</h1>
+            <div class="user-info">
+                <span id="userInfo"></span>
+                <button id="logoutBtn">로그아웃</button>
+            </div>
+        </header>
+
+        <div id="error-message" class="error-message" style="display: none;"></div>
+
+        <div class="board-form">
+            <form id="boardForm">
+                <div class="form-group">
+                    <label for="title">제목</label>
+                    <input type="text" id="title" name="title" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="content">내용</label>
+                    <textarea id="content" name="content" rows="10" required></textarea>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn-primary">수정</button>
+                    <button type="button" id="cancelBtn" class="btn-secondary">취소</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/board-service.js"></script>
+    <script src="js/user-service.js"></script>
+    <script src="js/state.js"></script>
+    <script src="js/error-handler.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        const app = new BoardApp();
+        const urlParams = new URLSearchParams(window.location.search);
+        const boardNo = urlParams.get('id');
+
+        // 인증 확인
+        if (!app.isAuthenticated()) {
+            window.location.href = 'login.html';
+        }
+
+        // 사용자 정보 표시
+        const user = app.getUser();
+        document.getElementById('userInfo').textContent = `${user.name}님 (${user.role})`;
+
+        // 로그아웃 버튼
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            app.logout();
+        });
+
+        // 취소 버튼
+        document.getElementById('cancelBtn').addEventListener('click', () => {
+            window.location.href = `board-detail.html?id=${boardNo}`;
+        });
+
+        // 게시글 데이터 로드
+        // 게시글 데이터 로드 및 권한 확인
+		async function loadBoard() {
+    		try {
+        		const board = await app.loadBoard(boardNo);
+
+        		// 작성자가 아닌 경우 접근 차단
+        		if (board.authorNo !== user.userNo) {
+            		alert('수정 권한이 없습니다.');
+            		window.location.href = `board-detail.html?id=${boardNo}`;
+            		return;
+        		}
+
+        		document.getElementById('title').value = board.title;
+        		document.getElementById('content').value = board.content;
+    		} catch (error) {
+       		alert('게시글을 불러올 수 없습니다.');
+        		window.location.href = 'boards.html';
+    		}
+		}
+
+        // 게시글 수정 폼
+        document.getElementById('boardForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const boardData = {
+                title: document.getElementById('title').value,
+                content: document.getElementById('content').value
+            };
+
+            try {
+                await app.updateBoard(boardNo, boardData);
+                alert('게시글이 수정되었습니다.');
+                window.location.href = `board-detail.html?id=${boardNo}`;
+            } catch (error) {
+                // 오류는 ErrorHandler에서 처리됨
+            }
+        });
+
+        // 초기 로드
+        loadBoard();
+    </script>
+</body>
+</html>

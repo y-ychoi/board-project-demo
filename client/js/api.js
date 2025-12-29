@@ -52,6 +52,8 @@ class ApiClient {
     }
 
     async get(endpoint, params = {}) {
+        // 캐시 방지를 위한 timestamp 추가
+        params._t = Date.now();
         const queryString = new URLSearchParams(params).toString();
         const url = queryString ? `${endpoint}?${queryString}` : endpoint;
         return this.request(url, { method: 'GET' });

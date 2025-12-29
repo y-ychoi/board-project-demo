@@ -88,7 +88,12 @@ class BoardApp {
     async createBoard(boardData) {
         try {
             this.stateManager.setLoading(true);
-            return await this.boardService.createBoard(boardData);
+            const result = await this.boardService.createBoard(boardData);
+            
+            // 게시글 작성 완료 신호를 localStorage에 저장
+            localStorage.setItem('boardCreated', Date.now().toString());
+            
+            return result;
         } catch (error) {
             this.errorHandler.handleError(error);
             throw error;

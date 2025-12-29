@@ -26,13 +26,19 @@ class AuthManager {
     }
 
     async signup(userData) {
+        console.log('회원가입 요청 데이터:', userData);
+        
         const response = await fetch(`${this.baseURL}/auth/signup`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(userData)
         });
 
+        console.log('응답 상태:', response.status);
+        console.log('응답 헤더:', response.headers);
+        
         const result = await response.json();
+        console.log('응답 데이터:', result);
         
         if (!result.success) {
             throw new Error(result.error?.message || '회원가입 실패');

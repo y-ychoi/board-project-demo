@@ -77,8 +77,9 @@
             };
             
             try {
-                await app.createBoard(boardData);
+                const newBoard = await app.createBoard(boardData);
                 alert('게시글이 작성되었습니다.');
+                // 게시글 작성 후 목록 페이지로 이동
                 window.location.href = 'boards.html';
             } catch (error) {
                 // 오류는 ErrorHandler에서 처리됨

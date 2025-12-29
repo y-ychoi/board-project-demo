@@ -7,7 +7,11 @@ class BoardService {
     }
 
     async getBoards(page = 0, size = 10) {
-        return this.api.get('/boards', { page, size });
+        console.log(`API 호출: /boards?page=${page}&size=${size}`);
+        const result = await this.api.get('/boards', { page, size });
+        console.log('API 응답:', result);
+        // REST API 응답에서 data 필드 추출
+        return result.data || result;
     }
 
     async getBoard(boardNo) {

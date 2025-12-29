@@ -56,7 +56,7 @@ public class BoardController {
 	    String currentUserId = principal != null ? principal.getName() : null;
 
 	    // 2. Service 호출 시 현재 사용자 ID를 전달합니다.
-	    Page<BoardListResponseDto> paging = boardService.getBoardList(page, currentUserId); // 🚨 currentUserId 파라미터 추가
+	    Page<BoardListResponseDto> paging = boardService.getBoardList(page, 20,currentUserId); // 🚨 currentUserId 파라미터 추가
 
 	    // 3. View 에서 사용할 현재 로그인 사용자의 이름을 Model 에 담습니다. (유지)
 	    if (principal != null) {

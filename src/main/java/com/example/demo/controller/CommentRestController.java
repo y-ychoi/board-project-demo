@@ -63,7 +63,7 @@ public class CommentRestController {
 
     	List<CommentResponseDto> comments = commentService.getCommentList(boardNo);
     	return ResponseEntity.ok()
-                .cacheControl(CacheControl.maxAge(Duration.ofSeconds(30)))
+    			.cacheControl(CacheControl.noCache())
                 .body(ApiResponseDto.success(comments, "댓글 목록 조회 성공"));
     }
 

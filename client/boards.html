@@ -77,17 +77,22 @@
         
         // 상태 변경 리스너
         app.stateManager.subscribe((state) => {
+            console.log('상태 변경:', state);
             document.getElementById('loading').style.display = state.loading ? 'block' : 'none';
             
             if (state.boards) {
+                console.log('게시글 데이터 렌더링:', state.boards);
                 renderBoards(state.boards);
             }
         });
         
         // 게시글 목록 렌더링
-        function renderBoards(boardsData) {
+        function renderBoards(response) {
             const tbody = document.getElementById('boardTableBody');
             tbody.innerHTML = '';
+            
+            // API 응답에서 실제 데이터 추출
+            const boardsData = response.data || response;
             
             if (boardsData.content && boardsData.content.length > 0) {
                 boardsData.content.forEach(board => {
@@ -102,36 +107,134 @@
                     tbody.appendChild(row);
                 });
                 
-                renderPagination(boardsData.pageable);
+                renderPagination(boardsData);
             } else {
                 tbody.innerHTML = '<tr><td colspan="5">게시글이 없습니다.</td></tr>';
             }
         }
         
         // 페이지네이션 렌더링
-        function renderPagination(pageable) {
+        function renderPagination(boardsData) {
             const pagination = document.getElementById('pagination');
             pagination.innerHTML = '';
             
-            if (pageable.totalPages > 1) {
-                for (let i = 0; i < pageable.totalPages; i++) {
-                    const button = document.createElement('button');
-                    button.textContent = i + 1;
-                    button.className = i === currentPage ? 'active' : '';
-                    button.addEventListener('click', () => loadPage(i));
-                    pagination.appendChild(button);
-                }
-            }
+            const totalElements = boardsData.totalElements
+            const totalPages = Math.ceil(totalElements / pageSize)
+            
+            if (totalPages <= 1) return;
+            
+            // 이전 페이지 버튼
+            const prevBtn = document.createElement('button')
+            
+            prevBtn.textContent ='이전';
+            prevBtn.className = 'pagination-btn';
+            prevBtn.disabled = currentPage===0;
+            prevBtn.addEventListener('click', ()=> loadPage(currentPage - 1));
+        	pagination.appendChild(prevBtn);
+        	
+        	// 페이지 번호 표시 ( 현재 페이지 기준 ±3 페이지)
+        	const startPage = Math.max(0,currentPage -3);
+        	const endPage = Math.min(totalPages - 1, currentPage + 3);
+        	
+        	//첫 페이지가 범위에 없으면 추가
+        	if(startPage>0) {
+				const firstBtn = createPageButton(0,'1');
+				
+				pagination.appendChild(firstBtn);
+				if(startPage>1){
+					const dots = document.createElement('span');
+					dots.textContent = '...';
+					dots.className = 'pagination-dots';
+					pagination.appendChild(dots);
+				}
+			}
+			
+			//페이지 번호 버튼들
+			for(let i=startPage;i<=endPage;i++){
+				const pageBtn = createPageButton(i,(i+1).toString());
+				pagination.appendChild(pageBtn);
+			}
+			
+			//마지막 페이지가 범위에 없으면 추가
+			if(endPage<totalPages-1) {
+				if(endPage < totalPages -2){
+					const dots = document.createElement('span');
+					dots.textContent='...';
+					dots.className = 'pagination-dots';
+					pagination.appendChild(dots);
+				}
+				const lastBtn = createPageButton(totalPages-1, totalPages.toString());
+				pagination.appendChild(lastBtn);
+			}
+			
+			// 다음 페이지 버튼
+			const nextBtn = document.createElement('button');
+			nextBtn.textContent = '다음';
+			nextBtn.className = 'pagination-btn';
+			nextBtn.disabled = currentPage >=totalPages-1;
+			nextBtn.addEventListener('click',()=> loadPage(currentPage +1));
+			pagination.appendChild(nextBtn);
+			
+			
         }
+        // 페이지 버튼 생성 헬퍼 함수
+        function createPageButton(pageNum, text) {
+			const button = document.createElement('button');
+			button.textContent = text;
+			 button.className = pageNum === currentPage ? 'pagination-btn active' : 'pagination-btn';
+			 button.addEventListener('click', () => loadPage(pageNum));
+			 return button;
+		}
         
         // 페이지 로드
         async function loadPage(page) {
+            console.log(`페이지 ${page} 로딩 시작`);
             currentPage = page;
-            await app.loadBoards(page, pageSize);
+            try {
+                const result = await app.loadBoards(page, pageSize);
+                console.log('게시글 목록 응답:', result);
+            } catch (error) {
+                console.error('게시글 목록 로딩 실패:', error);
+            }
         }
         
-        // 초기 로드
-        loadPage(0);
+        // 초기 로드 및 실시간 업데이트
+        window.addEventListener('load', () => {
+            loadPage(0);
+            
+            // localStorage 변경 감지 (다른 탭에서 게시글 작성 시)
+            window.addEventListener('storage', (e) => {
+                if (e.key === 'boardCreated') {
+                    console.log('다른 탭에서 게시글 작성됨, 목록 새로고침');
+                    loadPage(0);
+                }
+            });
+            
+            // 현재 탭에서 게시글 작성 완료 감지
+            const checkBoardCreated = () => {
+                const lastCreated = localStorage.getItem('boardCreated');
+                const lastChecked = sessionStorage.getItem('lastChecked') || '0';
+                
+                if (lastCreated && lastCreated > lastChecked) {
+                    console.log('게시글 작성 완료 감지, 목록 새로고침');
+                    sessionStorage.setItem('lastChecked', lastCreated);
+                    loadPage(0);
+                }
+            };
+            
+            // 페이지 포커스 시 확인
+            window.addEventListener('focus', checkBoardCreated);
+            
+            // 주기적 확인 (2초마다)
+            setInterval(checkBoardCreated, 2000);
+        });
+        
+        // 페이지가 다시 보여질 때도 새로고침 (뒤로가기 등)
+        window.addEventListener('pageshow', (event) => {
+            if (event.persisted) {
+                loadPage(currentPage);
+            }
+        });
     </script>
 </body>
 </html>
