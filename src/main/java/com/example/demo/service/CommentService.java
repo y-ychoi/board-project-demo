@@ -163,6 +163,29 @@ public class CommentService {
 
         return commentRepository.save(comment);
     }
+    /**
+     * REST API용 댓글 수정
+     */
+    public void updateCommentForApi(Long boardNo, Long commentNo, String content, String userId, Role userRole) {
+        Comment comment = commentRepository.findById(commentNo)
+                .orElseThrow(() -> new IllegalArgumentException("댓글을 찾을 수 없습니다."));
+
+        // 게시글 존재 확인
+        if (!comment.getBoard().getBoardNo().equals(boardNo)) {
+            throw new IllegalArgumentException("잘못된 게시글 번호입니다.");
+        }
+
+        // 권한 확인: 작성자만 수정 가능 (ADMIN도 수정 불가)
+        User currentUser = userRepository.findByUserId(userId)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+        Long currentUserNo = currentUser.getUserNo();
+        if (!comment.getAuthorNo().equals(currentUserNo)) {
+            throw new UnauthorizedAccessException("댓글 수정 권한이 없습니다.");
+        }
+
+        comment.setContent(content);
+        commentRepository.save(comment);
+    }
 
     /**
      * REST API용 댓글 삭제 (권한 체크 포함)

@@ -38,6 +38,9 @@ class BoardService {
         return this.api.post(`/boards/${boardNo}/comments`, { content });
     }
 
+	async updateComment(boardNo, commentNo, content) {
+    	return this.api.put(`/boards/${boardNo}/comments/${commentNo}`, { content });
+	}
     async deleteComment(boardNo, commentNo) {
         return this.api.delete(`/boards/${boardNo}/comments/${commentNo}`);
     }

@@ -1,6 +1,5 @@
 package com.example.demo.controller;
 
-import java.time.Duration;
 import java.util.List;
 
 import org.springframework.http.CacheControl;
@@ -101,6 +100,33 @@ public class CommentRestController {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .cacheControl(CacheControl.noCache())
                 .body(ApiResponseDto.success(comment, "댓글 작성 성공"));
+    }
+    
+    /**
+     * 댓글 수정 API
+     * PUT /api/v1/boards/{boardNo}/comments/{commentNo}
+     */
+    @Operation(summary = "댓글 수정", description = "특정 댓글을 수정합니다.")
+    @ApiResponse(responseCode = "200", description = "댓글 수정 성공")
+    @ApiResponse(responseCode = "403", description = "수정 권한 없음")
+    @ApiResponse(responseCode = "404", description = "게시글 또는 댓글을 찾을 수 없음")
+    @PreAuthorize("hasRole('GUEST') or hasRole('ADMIN')")
+    @PutMapping("/{commentNo}")
+    public ResponseEntity<ApiResponseDto<Void>> updateComment(
+            @Parameter(description = "게시글 번호") @PathVariable Long boardNo,
+            @Parameter(description = "댓글 번호") @PathVariable Long commentNo,
+            @Valid @RequestBody CommentCreateRequestDto commentRequest,
+            Authentication authentication) {
+
+        String userId = authentication.getName();
+        User user = userService.getUserByUserId(userId);
+
+        // 댓글 수정 처리 (권한 체크 포함)
+        commentService.updateCommentForApi(boardNo, commentNo, commentRequest.getContent(), userId, user.getRole());
+
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.noCache())
+                .body(ApiResponseDto.success(null, "댓글 수정 성공"));
     }
 
     /**
