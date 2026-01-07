@@ -382,6 +382,7 @@ Content-Type: application/json
 - Spring Security 이중 보안 설정 완료
 - Swagger API 문서화 완료
 - 댓글 수정 기능 완료 (2025.12.30)
+- 탈퇴 회원 마스킹 예외 처리 완료 (2025.12.30)
 
 **프론트엔드 (JavaScript SPA)**
 - 완전한 SPA 클라이언트 구현
@@ -389,12 +390,14 @@ Content-Type: application/json
 - JWT 토큰 관리 시스템 완료
 - 댓글 CRUD 기능 완료 (수정 포함)
 - 반응형 UI 구현
+- 에러 처리 개선 완료 (2025.12.30)
 
 **보안 및 성능**
 - BCrypt 암호화
 - CORS 설정
 - 캐싱 시스템
 - 권한 기반 접근 제어
+- 개인정보 마스킹 (탈퇴 회원 예외 처리)
 
 ---
 
