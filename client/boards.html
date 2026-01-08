@@ -21,9 +21,7 @@
         <div class="board-actions">
             <button id="createBoardBtn" class="btn-primary">게시글 작성</button>
         </div>
-        
-        <div id="loading" class="loading" style="display: none;">로딩 중...</div>
-        
+                
         <div class="board-list">
             <table id="boardTable">
                 <thead>
@@ -75,11 +73,10 @@
 	
 	        // 상태 변경 감지
 	        app.stateManager.subscribe((state) => {
-	            document.getElementById('loading').style.display = state.loading ? 'block' : 'none';
-	            if (state.boards) {
-	                renderBoards(state.boards);
-	            }
-	        });
+                    if (state.boards) {
+                        renderBoards(state.boards);
+                    }
+                });
 	
 	        // 초기 페이지 로드
 	        loadPage(0);
