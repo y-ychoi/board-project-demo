@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>회원 관리 - Board App</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>회원 관리</h1>
+            <div class="nav-buttons">
+                <button onclick="goBack()" class="btn-secondary">뒤로가기</button>
+                <button onclick="logout()" class="btn-danger">로그아웃</button>
+            </div>
+        </div>
+
+        <div id="error-message" class="error-message" style="display: none;"></div>
+
+        <div class="admin-panel">
+            <h2>전체 회원 목록</h2>
+            <div id="loading" class="loading" style="display: none;">로딩 중...</div>
+
+            <div class="users-table">
+                <table id="usersTable" class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>번호</th>
+                            <th>아이디</th>
+                            <th>이름</th>
+                            <th>이메일</th>
+                            <th>권한</th>
+                            <th>가입일</th>
+                            <th>관리</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody">
+                        <!-- 사용자 목록이 여기에 동적으로 추가됩니다 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 권한 변경 모달 -->
+    <div id="roleModal" class="admin-modal" style="display: none;">
+        <div class="admin-modal-content">
+            <h3>권한 변경</h3>
+            <p id="roleModalText"></p>
+            <div class="admin-modal-buttons">
+                <select id="roleSelect">
+                    <option value="GUEST">일반 회원 (GUEST)</option>
+                    <option value="ADMIN">관리자 (ADMIN)</option>
+                </select>
+                <button onclick="confirmRoleChange()" class="btn-primary">변경</button>
+                <button onclick="closeRoleModal()" class="btn-secondary">취소</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/user-service.js"></script>
+    <script src="js/state.js"></script>
+    <script src="js/GlobalErrorHandler.js"></script>
+    <script src="js/app.js"></script>
+	<script src="js/page-init.js"></script>
+	<script>
+	    let app;
+	    let currentUser;
+	    let selectedUserNo;
+	
+	    document.addEventListener('DOMContentLoaded', async () => {
+	        const result = PageInitializer.init(true, true); // 인증 필요 + 관리자 전용
+	        if (!result) return;
+	
+	        app = result.app;
+	        currentUser = result.user;
+	
+	        await loadUsers();
+	    });
+
+        // 사용자 목록 로드
+        async function loadUsers() {
+            try {
+                document.getElementById('loading').style.display = 'block';
+                const response = await app.apiClient.get('/users');
+                const users = await app.userService.getUsers();
+                renderUsers(users);
+            } catch (error) {
+                GlobalErrorHandler.getInstance().reportError(error, '사용자 목록 로딩');
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        // 사용자 목록 렌더링
+        function renderUsers(users) {
+            const tbody = document.getElementById('usersTableBody');
+            tbody.innerHTML = '';
+
+            users.forEach((user, index) => {
+                const row = document.createElement('tr');
+                if (user.userId === currentUser.userId) {
+                    row.classList.add('current-user');
+                }
+
+                const roleClass = user.role === 'ADMIN' ? 'role-admin' : 'role-guest';
+                const isCurrentUser = user.userId === currentUser.userId;
+
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${user.userId}</td>
+                    <td>${user.name}</td>
+                    <td>${user.email || '-'}</td>
+                    <td><span class="role-badge ${roleClass}">${user.role}</span></td>
+                    <td>${formatDate(user.createDt)}</td>
+                    <td>
+                        ${!isCurrentUser ?
+                            `<button onclick="openRoleModal(${user.userNo}, '${user.userId}', '${user.role}')" class="btn-small btn-primary">권한 변경</button>` :
+                            '<span class="text-muted">본인</span>'
+                        }
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // 권한 변경 모달 열기
+        function openRoleModal(userNo, userId, currentRole) {
+            selectedUserNo = userNo;
+            document.getElementById('roleModalText').textContent = `${userId}님의 권한을 변경하시겠습니까?`;
+            document.getElementById('roleSelect').value = currentRole;
+            document.getElementById('roleModal').style.display = 'flex';
+        }
+
+        // 권한 변경 모달 닫기
+        function closeRoleModal() {
+            document.getElementById('roleModal').style.display = 'none';
+            selectedUserNo = null;
+        }
+
+        // 권한 변경 확인
+        async function confirmRoleChange() {
+            const newRole = document.getElementById('roleSelect').value;
+
+            try {
+                await app.userService.updateUserRole(selectedUserNo, newRole);
+                GlobalErrorHandler.getInstance().showMessage('권한이 성공적으로 변경되었습니다.', 'success');
+                closeRoleModal();
+                await loadUsers();
+            } catch (error) {
+                GlobalErrorHandler.getInstance().reportError(error, '권한 변경');
+            }
+        }
+
+        // 날짜 포맷팅
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('ko-KR') + ' ' + date.toLocaleTimeString('ko-KR', {hour: '2-digit', minute: '2-digit'});
+        }
+
+        // 뒤로가기
+        function goBack() {
+            window.location.href = 'boards.html';
+        }
+
+        // 로그아웃
+        function logout() {
+            app.authManager.logout();
+            window.location.href = 'login.html';
+        }
+    </script>
+
+</body>
+</html>

@@ -25,7 +25,7 @@ Spring Boot와 Spring Security를 활용한 **하이브리드 게시판 애플�
 ### JavaScript 클라이언트 (SPA)
 - **완전한 프론트엔드 구현** - 모든 REST API 연동 완료
 - **JWT 토큰 관리** - 자동 인증 헤더 처리
-- **모듈화된 아키텍처** - 7개 JavaScript 모듈
+- **모듈화된 아키텍처** - 8개 JavaScript 모듈
 - **반응형 UI** - 모바일 친화적 디자인
 - **실시간 상태 관리** - StateManager 기반
 
@@ -142,7 +142,8 @@ board-project-demo/
 │   │   ├── board-service.js              # 게시판 서비스
 │   │   ├── user-service.js               # 사용자 서비스
 │   │   ├── state.js                      # 상태 관리
-│   │   ├── error-handler.js              # 오류 처리
+│   │   ├── GlobalErrorHandler.js         # 통합 오류 처리 시스템
+│   │   ├── page-init.js                  # 페이지 공통 초기화
 │   │   └── app.js                        # 메인 애플리케이션
 │   ├── css/
 │   │   └── style.css                     # 스타일시트
@@ -152,6 +153,7 @@ board-project-demo/
 │   ├── board-create.html                 # 게시글 작성
 │   ├── board-detail.html                 # 게시글 상세
 │   ├── board-edit.html                   # 게시글 수정
+│   ├── admin.html                        # 관리자 페이지
 │   └── README.md                         # 클라이언트 사용 가이드
 ├── REST_API_개발계획서.md                 # REST API 개발 계획
 ├── REST_API_구현진행상황.md               # 구현 진행 현황
@@ -383,6 +385,8 @@ Content-Type: application/json
 - Swagger API 문서화 완료
 - 댓글 수정 기능 완료 (2025.12.30)
 - 탈퇴 회원 마스킹 예외 처리 완료 (2025.12.30)
+- 에러 처리 시스템 통합 완료 (2026.01.08)
+- 관리자 페이지 기본 구현 완료 (2026.01.08)
 
 **프론트엔드 (JavaScript SPA)**
 - 완전한 SPA 클라이언트 구현
@@ -390,7 +394,8 @@ Content-Type: application/json
 - JWT 토큰 관리 시스템 완료
 - 댓글 CRUD 기능 완료 (수정 포함)
 - 반응형 UI 구현
-- 에러 처리 개선 완료 (2025.12.30)
+- GlobalErrorHandler 통합 에러 처리 시스템 완료 (2026.01.08)
+- 코드 모듈화 및 구조 개선 완료 (2026.01.08)
 
 **보안 및 성능**
 - BCrypt 암호화

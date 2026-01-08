@@ -43,73 +43,108 @@
     <script src="js/board-service.js"></script>
     <script src="js/user-service.js"></script>
     <script src="js/state.js"></script>
-    <script src="js/error-handler.js"></script>
+    <script src="js/GlobalErrorHandler.js"></script>
     <script src="js/app.js"></script>
     <script>
-        const app = new BoardApp();
-        const urlParams = new URLSearchParams(window.location.search);
-        const boardNo = urlParams.get('id');
-
-        // 인증 확인
-        if (!app.isAuthenticated()) {
-            window.location.href = 'login.html';
-        }
-
-        // 사용자 정보 표시
-        const user = app.getUser();
-        document.getElementById('userInfo').textContent = `${user.name}님 (${user.role})`;
-
-        // 로그아웃 버튼
-        document.getElementById('logoutBtn').addEventListener('click', () => {
-            app.logout();
-        });
-
-        // 취소 버튼
-        document.getElementById('cancelBtn').addEventListener('click', () => {
-            window.location.href = `board-detail.html?id=${boardNo}`;
-        });
-
-        // 게시글 데이터 로드
-        // 게시글 데이터 로드 및 권한 확인
-		async function loadBoard() {
-    		try {
-        		const board = await app.loadBoard(boardNo);
-
-        		// 작성자가 아닌 경우 접근 차단
-        		if (board.authorNo !== user.userNo) {
-            		alert('수정 권한이 없습니다.');
-            		window.location.href = `board-detail.html?id=${boardNo}`;
-            		return;
-        		}
-
-        		document.getElementById('title').value = board.title;
-        		document.getElementById('content').value = board.content;
-    		} catch (error) {
-       		alert('게시글을 불러올 수 없습니다.');
-        		window.location.href = 'boards.html';
-    		}
-		}
-
-        // 게시글 수정 폼
-        document.getElementById('boardForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-
-            const boardData = {
-                title: document.getElementById('title').value,
-                content: document.getElementById('content').value
-            };
-
-            try {
-                await app.updateBoard(boardNo, boardData);
-                alert('게시글이 수정되었습니다.');
-                window.location.href = `board-detail.html?id=${boardNo}`;
-            } catch (error) {
-                // 오류는 ErrorHandler에서 처리됨
-            }
-        });
-
-        // 초기 로드
-        loadBoard();
-    </script>
+	    let app;
+	    let user;
+	    let boardNo;
+	
+	    document.addEventListener('DOMContentLoaded', () => {
+	        app = new BoardApp();
+	
+	        const urlParams = new URLSearchParams(window.location.search);
+	        boardNo = urlParams.get('id');
+	
+	        if (!boardNo) {
+	            window.location.href = 'boards.html';
+	            return;
+	        }
+	
+	        // 인증 확인
+	        if (!app.isAuthenticated()) {
+	            window.location.href = 'login.html';
+	            return;
+	        }
+	
+	        // 사용자 정보 표시
+	        user = app.getUser();
+	        document.getElementById('userInfo').textContent = `${user.name}님 (${user.role})`;
+	
+	        // 이벤트 리스너 등록
+	        setupEventListeners();
+	
+	        // 초기 로드
+	        loadBoard();
+	    });
+	
+	    function setupEventListeners() {
+	        // 로그아웃 버튼
+	        document.getElementById('logoutBtn').addEventListener('click', () => {
+	            app.logout();
+	        });
+	
+	        // 취소 버튼
+	        document.getElementById('cancelBtn').addEventListener('click', () => {
+	            window.location.href = `board-detail.html?id=${boardNo}`;
+	        });
+	
+	        // 게시글 수정 폼
+	        document.getElementById('boardForm').addEventListener('submit', async (e) => {
+	            e.preventDefault();
+	
+	            const title = document.getElementById('title').value.trim();
+	            const content = document.getElementById('content').value.trim();
+	
+	            // 입력값 검증
+	            if (!title) {
+	                alert('제목을 입력하세요.');
+	                document.getElementById('title').focus();
+	                return;
+	            }
+	
+	            if (!content) {
+	                alert('내용을 입력하세요.');
+	                document.getElementById('content').focus();
+	                return;
+	            }
+	
+	            const boardData = {
+	                title: title,
+	                content: content
+	            };
+	
+	            try {
+	                await app.updateBoard(boardNo, boardData);
+	                alert('게시글이 수정되었습니다.');
+	                window.location.href = `board-detail.html?id=${boardNo}`;
+	            } catch (error) {
+	                // 오류는 ErrorHandler에서 처리됨
+	            }
+	        });
+	    }
+	
+	    // 게시글 데이터 로드 및 권한 확인
+	    async function loadBoard() {
+	        try {
+	            const board = await app.loadBoard(boardNo);
+	
+	            // 작성자가 아닌 경우 접근 차단
+	            if (board.authorNo !== user.userNo) {
+	                alert('수정 권한이 없습니다.');
+	                window.location.href = `board-detail.html?id=${boardNo}`;
+	                return;
+	            }
+	
+	            // 폼에 기존 데이터 설정
+	            document.getElementById('title').value = board.title;
+	            document.getElementById('content').value = board.content;
+	
+	        } catch (error) {
+	            alert('게시글을 불러올 수 없습니다.');
+	            window.location.href = 'boards.html';
+	        }
+	    }
+	</script>
 </body>
 </html>

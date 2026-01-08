@@ -57,191 +57,205 @@
     <script src="js/board-service.js"></script>
     <script src="js/user-service.js"></script>
     <script src="js/state.js"></script>
-    <script src="js/error-handler.js"></script>
+    <script src="js/GlobalErrorHandler.js"></script>
     <script src="js/app.js"></script>
     <script>
-        const app = new BoardApp();
-        const urlParams = new URLSearchParams(window.location.search);
-        const boardNo = urlParams.get('id');
-        
-        if (!boardNo) {
-            window.location.href = 'boards.html';
-        }
-        
-        // 인증 확인
-        if (!app.isAuthenticated()) {
-            window.location.href = 'login.html';
-        }
-        
-        // 사용자 정보 표시
-        const user = app.getUser();
-        document.getElementById('userInfo').textContent = `${user.name}님 (${user.role})`;
-        
-        // 로그아웃 버튼
-        document.getElementById('logoutBtn').addEventListener('click', () => {
-            app.logout();
-        });
-        
-        // 목록 버튼
-        document.getElementById('backBtn').addEventListener('click', () => {
-            window.location.href = 'boards.html';
-        });
-        
-        // 상태 변경 리스너
-        app.stateManager.subscribe((state) => {
-            document.getElementById('loading').style.display = state.loading ? 'block' : 'none';
-            
-            if (state.currentBoard) {
-                renderBoard(state.currentBoard);
-            }
-        });
-        
-        // 게시글 렌더링
-        function renderBoard(board) {
-            document.getElementById('boardTitle').textContent = board.title;
-            document.getElementById('boardAuthor').textContent = `작성자: ${board.authorName || '알 수 없음'}`;
-            document.getElementById('boardDate').textContent = `작성일: ${new Date(board.createDt).toLocaleString()}`;
-            document.getElementById('boardViews').textContent = `조회수: ${board.viewCnt}`;
-            document.getElementById('boardContent').innerHTML = board.content.replace(/\n/g, '<br>');
-            
-            // 작성자인 경우만 수정 버튼 표시, 삭제는 작성자 또는 관리자
-			if (board.authorNo === user.userNo) {
-    			document.getElementById('editBtn').style.display = 'inline-block';
-			}
-
-			if (board.authorNo === user.userNo || user.role === 'ADMIN') {
-    			document.getElementById('deleteBtn').style.display = 'inline-block';
-			}
-            
-            document.getElementById('boardDetail').style.display = 'block';
-            document.getElementById('commentsSection').style.display = 'block';
-            
-            loadComments();
-        }
-        
-        // 댓글 로드
-        async function loadComments() {
-            try {
-                const comments = await app.boardService.getComments(boardNo);
-                renderComments(comments);
-            } catch (error) {
-                app.errorHandler.handleError(error);
-            }
-        }
-        
-        // 댓글 목록 렌더링
-		function renderComments(comments) {
-    		const commentsDiv = document.getElementById('commentsList');
-		    commentsDiv.innerHTML = '';
-
-		    comments.forEach(comment => {
-        		const commentDiv = document.createElement('div');
-		        commentDiv.className = 'comment';
-
-        // 수정 여부 확인 (생성일시와 수정일시 비교)
-		        const isModified = new Date(comment.createDt).getTime() !== new Date(comment.modifyDt).getTime();
-        	const modifiedTag = isModified ? ' <span class="modified-tag">(수정됨)</span>' : '';
-
-		        commentDiv.innerHTML = `
-		      	    <div class="comment-header">
-		                <span class="comment-author">${comment.authorName}</span>
-		                <span class="comment-date">${new Date(comment.createDt).toLocaleString()}${modifiedTag}</span>
-            		</div>
-		            <div class="comment-content" id="comment-content-${comment.commentNo}">
-		                ${comment.content}
-        		    </div>
-            		<div class="comment-edit-form" id="comment-edit-${comment.commentNo}" style="display: none;">
-                		<textarea id="edit-content-${comment.commentNo}">${comment.content}</textarea>
-		                <button onclick="saveComment(${comment.commentNo})">저장</button>
-		                <button onclick="cancelEdit(${comment.commentNo})">취소</button>
-        		    </div>
-            		<div class="comment-actions">
-		                ${comment.authorNo === user.userNo ?
-        		            `<button class="comment-edit" onclick="editComment(${comment.commentNo})">수정</button>
-                		     <button class="comment-delete" onclick="deleteComment(${comment.commentNo})">삭제</button>` : ''}
-            		</div>
-        		`;
-        		commentsDiv.appendChild(commentDiv);
-    		});
-		}
-        
-        // 댓글 작성
-        document.getElementById('addCommentBtn').addEventListener('click', async () => {
-            const content = document.getElementById('commentContent').value.trim();
-            if (!content) {
-                alert('댓글 내용을 입력하세요.');
-                return;
-            }
-            
-            try {
-                await app.boardService.createComment(boardNo, content);
-                document.getElementById('commentContent').value = '';
-                loadComments();
-            } catch (error) {
-                app.errorHandler.handleError(error);
-            }
-        });
-        
-        // 댓글 삭제
-        async function deleteComment(commentNo) {
-            if (!confirm('댓글을 삭제하시겠습니까?')) return;
-            
-            try {
-                await app.boardService.deleteComment(boardNo, commentNo);
-                loadComments();
-            } catch (error) {
-                app.errorHandler.handleError(error);
-            }
-        }
-        // 댓글 수정 모드 전환
-		function editComment(commentNo) {
-    		document.getElementById(`comment-content-${commentNo}`).style.display = 'none';
-    		document.getElementById(`comment-edit-${commentNo}`).style.display = 'block';
-		}
-
-		// 댓글 수정 저장
-		async function saveComment(commentNo) {
-    		const content = document.getElementById(`edit-content-${commentNo}`).value.trim();
-		    if (!content) {
-        		alert('댓글 내용을 입력하세요.');
-        		return;
-    		}
-
-    		try {
-		        await app.boardService.updateComment(boardNo, commentNo, content);
-        		loadComments();
-		    } catch (error) {
-        		app.errorHandler.handleError(error);
-		    }
-		}
-
-// 댓글 수정 취소
-		function cancelEdit(commentNo) {
-    		document.getElementById(`comment-content-${commentNo}`).style.display = 'block';
-    		document.getElementById(`comment-edit-${commentNo}`).style.display = 'none';
-		}
-
-        
-        		// 게시글 수정 버튼
-				document.getElementById('editBtn').addEventListener('click', () => {
-    				window.location.href = `board-edit.html?id=${boardNo}`;
-				});
-        
-        		// 게시글 삭제
-        		document.getElementById('deleteBtn').addEventListener('click', async () => {
-            		if (!confirm('게시글을 삭제하시겠습니까?')) return;
-            
-            		try {
-                		await app.deleteBoard(boardNo);
-                		alert('게시글이 삭제되었습니다.');
-                		window.location.href = 'boards.html';
-            		} catch (error) {
-                		app.errorHandler.handleError(error);
-            		}
-        		});
-        
-        // 초기 로드
-        app.loadBoard(boardNo);
-    </script>
+	    let app;
+	    let boardNo;
+	    let user;
+	
+	    document.addEventListener('DOMContentLoaded', () => {
+	        app = new BoardApp();
+	
+	        const urlParams = new URLSearchParams(window.location.search);
+	        boardNo = urlParams.get('id');
+	
+	        if (!boardNo) {
+	            window.location.href = 'boards.html';
+	            return;
+	        }
+	
+	        // 인증 확인
+	        if (!app.isAuthenticated()) {
+	            window.location.href = 'login.html';
+	            return;
+	        }
+	
+	        // 사용자 정보 표시
+	        user = app.getUser();
+	        document.getElementById('userInfo').textContent = `${user.name}님 (${user.role})`;
+	
+	        // 이벤트 리스너 등록
+	        setupEventListeners();
+	
+	        // 상태 변경 리스너
+	        app.stateManager.subscribe((state) => {
+	            document.getElementById('loading').style.display = state.loading ? 'block' : 'none';
+	
+	            if (state.currentBoard) {
+	                renderBoard(state.currentBoard);
+	            }
+	        });
+	
+	        // 초기 로드
+	        app.loadBoard(boardNo);
+	    });
+	
+	    function setupEventListeners() {
+	        // 로그아웃 버튼
+	        document.getElementById('logoutBtn').addEventListener('click', () => {
+	            app.logout();
+	        });
+	
+	        // 목록 버튼
+	        document.getElementById('backBtn').addEventListener('click', () => {
+	            window.location.href = 'boards.html';
+	        });
+	
+	        // 댓글 작성
+	        document.getElementById('addCommentBtn').addEventListener('click', async () => {
+	            const content = document.getElementById('commentContent').value.trim();
+	            if (!content) {
+	                alert('댓글 내용을 입력하세요.');
+	                return;
+	            }
+	
+	            try {
+	                await app.boardService.createComment(boardNo, content);
+	                document.getElementById('commentContent').value = '';
+	                loadComments();
+	            } catch (error) {
+	                GlobalErrorHandler.getInstance().reportError(error, '댓글 작성');
+	            }
+	        });
+	
+	        // 게시글 수정 버튼
+	        document.getElementById('editBtn').addEventListener('click', () => {
+	            window.location.href = `board-edit.html?id=${boardNo}`;
+	        });
+	
+	        // 게시글 삭제
+	        document.getElementById('deleteBtn').addEventListener('click', async () => {
+	            if (!confirm('게시글을 삭제하시겠습니까?')) return;
+	
+	            try {
+	                await app.deleteBoard(boardNo);
+	                alert('게시글이 삭제되었습니다.');
+	                window.location.href = 'boards.html';
+	            } catch (error) {
+	                GlobalErrorHandler.getInstance().reportError(error, '게시글 삭제');
+	            }
+	        });
+	    }
+	
+	    // 게시글 렌더링
+	    function renderBoard(board) {
+	        document.getElementById('boardTitle').textContent = board.title;
+	        document.getElementById('boardAuthor').textContent = `작성자: ${board.authorName || '알 수 없음'}`;
+	        document.getElementById('boardDate').textContent = `작성일: ${new Date(board.createDt).toLocaleString()}`;
+	        document.getElementById('boardViews').textContent = `조회수: ${board.viewCnt}`;
+	        document.getElementById('boardContent').innerHTML = board.content.replace(/\n/g, '<br>');
+	
+	        // 작성자인 경우만 수정 버튼 표시, 삭제는 작성자 또는 관리자
+	        if (board.authorNo === user.userNo) {
+	            document.getElementById('editBtn').style.display = 'inline-block';
+	        }
+	
+	        if (board.authorNo === user.userNo || user.role === 'ADMIN') {
+	            document.getElementById('deleteBtn').style.display = 'inline-block';
+	        }
+	
+	        document.getElementById('boardDetail').style.display = 'block';
+	        document.getElementById('commentsSection').style.display = 'block';
+	
+	        loadComments();
+	    }
+	
+	    // 댓글 로드
+	    async function loadComments() {
+	        try {
+	            const comments = await app.boardService.getComments(boardNo);
+	            renderComments(comments);
+	        } catch (error) {
+	            GlobalErrorHandler.getInstance().reportError(error, '댓글 로딩');
+	        }
+	    }
+	
+	    // 댓글 목록 렌더링
+	    function renderComments(comments) {
+	        const commentsDiv = document.getElementById('commentsList');
+	        commentsDiv.innerHTML = '';
+	
+	        comments.forEach(comment => {
+	            const commentDiv = document.createElement('div');
+	            commentDiv.className = 'comment';
+	
+	            // 수정 여부 확인 (생성일시와 수정일시 비교)
+	            const isModified = new Date(comment.createDt).getTime() !== new Date(comment.modifyDt).getTime();
+	            const modifiedTag = isModified ? ' <span class="modified-tag">(수정됨)</span>' : '';
+	
+	            commentDiv.innerHTML = `
+	                <div class="comment-header">
+	                    <span class="comment-author">${comment.authorName}</span>
+	                    <span class="comment-date">${new Date(comment.createDt).toLocaleString()}${modifiedTag}</span>
+	                </div>
+	                <div class="comment-content" id="comment-content-${comment.commentNo}">
+	                    ${comment.content}
+	                </div>
+	                <div class="comment-edit-form" id="comment-edit-${comment.commentNo}" style="display: none;">
+	                    <textarea id="edit-content-${comment.commentNo}">${comment.content}</textarea>
+	                    <button onclick="saveComment(${comment.commentNo})">저장</button>
+	                    <button onclick="cancelEdit(${comment.commentNo})">취소</button>
+	                </div>
+	                <div class="comment-actions">
+	                    ${comment.authorNo === user.userNo ?
+	                        `<button class="comment-edit" onclick="editComment(${comment.commentNo})">수정</button>
+	                         <button class="comment-delete" onclick="deleteComment(${comment.commentNo})">삭제</button>` : ''}
+	                </div>
+	            `;
+	            commentsDiv.appendChild(commentDiv);
+	        });
+	    }
+	
+	    // 댓글 삭제
+	    async function deleteComment(commentNo) {
+	        if (!confirm('댓글을 삭제하시겠습니까?')) return;
+	
+	        try {
+	            await app.boardService.deleteComment(boardNo, commentNo);
+	            loadComments();
+	        } catch (error) {
+	            GlobalErrorHandler.getInstance().reportError(error, '댓글 삭제');
+	        }
+	    }
+	
+	    // 댓글 수정 모드 전환
+	    function editComment(commentNo) {
+	        document.getElementById(`comment-content-${commentNo}`).style.display = 'none';
+	        document.getElementById(`comment-edit-${commentNo}`).style.display = 'block';
+	    }
+	
+	    // 댓글 수정 저장
+	    async function saveComment(commentNo) {
+	        const content = document.getElementById(`edit-content-${commentNo}`).value.trim();
+	        if (!content) {
+	            alert('댓글 내용을 입력하세요.');
+	            return;
+	        }
+	
+	        try {
+	            await app.boardService.updateComment(boardNo, commentNo, content);
+	            loadComments();
+	        } catch (error) {
+	            GlobalErrorHandler.getInstance().reportError(error, '댓글 수정');
+	        }
+	    }
+	
+	    // 댓글 수정 취소
+	    function cancelEdit(commentNo) {
+	        document.getElementById(`comment-content-${commentNo}`).style.display = 'block';
+	        document.getElementById(`comment-edit-${commentNo}`).style.display = 'none';
+	    }
+	</script>
 </body>
 </html>

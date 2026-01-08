@@ -43,48 +43,79 @@
     <script src="js/board-service.js"></script>
     <script src="js/user-service.js"></script>
     <script src="js/state.js"></script>
-    <script src="js/error-handler.js"></script>
+    <script src="js/GlobalErrorHandler.js"></script>
     <script src="js/app.js"></script>
     <script>
-        const app = new BoardApp();
-        
-        // 인증 확인
-        if (!app.isAuthenticated()) {
-            window.location.href = 'login.html';
-        }
-        
-        // 사용자 정보 표시
-        const user = app.getUser();
-        document.getElementById('userInfo').textContent = `${user.name}님 (${user.role})`;
-        
-        // 로그아웃 버튼
-        document.getElementById('logoutBtn').addEventListener('click', () => {
-            app.logout();
-        });
-        
-        // 취소 버튼
-        document.getElementById('cancelBtn').addEventListener('click', () => {
-            window.location.href = 'boards.html';
-        });
-        
-        // 게시글 작성 폼
-        document.getElementById('boardForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const boardData = {
-                title: document.getElementById('title').value,
-                content: document.getElementById('content').value
-            };
-            
-            try {
-                const newBoard = await app.createBoard(boardData);
-                alert('게시글이 작성되었습니다.');
-                // 게시글 작성 후 목록 페이지로 이동
-                window.location.href = 'boards.html';
-            } catch (error) {
-                // 오류는 ErrorHandler에서 처리됨
-            }
-        });
-    </script>
+	    let app;
+	    let user;
+	
+	    document.addEventListener('DOMContentLoaded', () => {
+	        app = new BoardApp();
+	
+	        // 인증 확인
+	        if (!app.isAuthenticated()) {
+	            window.location.href = 'login.html';
+	            return;
+	        }
+	
+	        // 사용자 정보 표시
+	        user = app.getUser();
+	        document.getElementById('userInfo').textContent = `${user.name}님 (${user.role})`;
+	
+	        // 이벤트 리스너 등록
+	        setupEventListeners();
+	    });
+	
+	    function setupEventListeners() {
+	        // 로그아웃 버튼
+	        document.getElementById('logoutBtn').addEventListener('click', () => {
+	            app.logout();
+	        });
+	
+	        // 취소 버튼
+	        document.getElementById('cancelBtn').addEventListener('click', () => {
+	            window.location.href = 'boards.html';
+	        });
+	
+	        // 게시글 작성 폼
+	        document.getElementById('boardForm').addEventListener('submit', async (e) => {
+	            e.preventDefault();
+	
+	            const title = document.getElementById('title').value.trim();
+	            const content = document.getElementById('content').value.trim();
+	
+	            // 입력값 검증
+	            if (!title) {
+	                alert('제목을 입력하세요.');
+	                document.getElementById('title').focus();
+	                return;
+	            }
+	
+	            if (!content) {
+	                alert('내용을 입력하세요.');
+	                document.getElementById('content').focus();
+	                return;
+	            }
+	
+	            const boardData = {
+	                title: title,
+	                content: content
+	            };
+	
+	            try {
+	                const newBoard = await app.createBoard(boardData);
+	                alert('게시글이 작성되었습니다.');
+	
+	                // 게시글 작성 완료 표시 (실시간 업데이트용)
+	                localStorage.setItem('boardCreated', Date.now().toString());
+	
+	                // 게시글 작성 후 목록 페이지로 이동
+	                window.location.href = 'boards.html';
+	            } catch (error) {
+	                // 오류는 ErrorHandler에서 처리됨
+	            }
+	        });
+	    }
+	</script>
 </body>
 </html>

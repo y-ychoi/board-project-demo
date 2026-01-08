@@ -6,7 +6,7 @@ class BoardApp {
         this.authManager = new AuthManager();
         this.apiClient = new ApiClient(this.authManager);
         this.stateManager = new StateManager();
-        this.errorHandler = new ErrorHandler(this.stateManager);
+        this.errorHandler = GlobalErrorHandler.getInstance(this.stateManager);
         
         this.boardService = new BoardService(this.apiClient);
         this.userService = new UserService(this.apiClient);
@@ -19,10 +19,6 @@ class BoardApp {
         if (user) {
             this.stateManager.setUser(user);
         }
-
-        window.addEventListener('unhandledrejection', (event) => {
-            this.errorHandler.handleError(event.reason);
-        });
     }
 
     async login(userId, password) {
