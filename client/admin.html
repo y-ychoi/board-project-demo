@@ -29,8 +29,8 @@
                     <thead>
                         <tr>
                             <th>번호</th>
-                            <th>아이디</th>
                             <th>이름</th>
+                            <th>아이디</th>
                             <th>이메일</th>
                             <th>권한</th>
                             <th>가입일</th>
@@ -114,8 +114,8 @@
 
                 row.innerHTML = `
                     <td>${index + 1}</td>
-                    <td>${user.userId}</td>
                     <td>${user.name}</td>
+                    <td>${user.userId}</td>
                     <td>${user.email || '-'}</td>
                     <td><span class="role-badge ${roleClass}">${user.role}</span></td>
                     <td>${formatDate(user.createDt)}</td>
