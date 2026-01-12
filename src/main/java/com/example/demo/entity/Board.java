@@ -36,11 +36,10 @@ public class Board extends BaseEntity{
 	@Comment("내용")
 	private String content; //내용
 	
-	@Setter
 	@Comment("조회수")
 	private Integer viewCnt; // 조회수
 	
-	// User Entity와 연관 관계 설정 (작성자)
+	// User Entity 연관 관계 설정 (작성자)
 	//@ManyToOne(fetch = FetchType.LAZY)
 	//private User author;
 	@Column(name = "author_no", nullable = false)
@@ -48,8 +47,13 @@ public class Board extends BaseEntity{
 	private Long authorNo;
 	
 	@Transient
-	@Setter
 	private User authorUser;
+	
+	// 기존 필드들 아래에 추가
+	@Column(name = "like_count")
+	@Comment("좋아요 수")
+	@Builder.Default
+	private Integer likeCount = 0; // 좋아요 수 (기본값 0)
 	
 	
 	// 🚨 OneToMany 관계 설정 및 CascadeType.REMOVE, orphanRemoval=true 적용

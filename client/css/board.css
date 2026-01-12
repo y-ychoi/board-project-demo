@@ -259,3 +259,196 @@
     #boardTable th:nth-child(3) { width: 25%; }
     #boardTable th:nth-child(5) { width: 25%; }
 }
+
+/* ========================================
+   좋아요 기능 스타일
+======================================== */
+
+/* 버튼 그룹 3분할 레이아웃 */
+.board-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 20px 0;
+    padding: 0 10px;
+    gap: 20px;
+}
+
+.button-left, .button-center, .button-right {
+    flex: 1;
+    display: flex;
+    gap: 10px;
+}
+
+.button-left {
+    justify-content: flex-start;  /* 왼쪽 정렬 */
+}
+
+.button-center {
+    justify-content: center;      /* 가운데 정렬 */
+}
+
+.button-right {
+    justify-content: flex-end;    /* 오른쪽 정렬 */
+}
+
+/* 좋아요 버튼 기본 스타일 */
+.btn-like {
+    background: transparent;
+    border: 2px solid #ddd;
+    border-radius: 25px;
+    padding: 10px 20px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 90px;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+
+/* 좋아요 버튼 호버 효과 */
+.btn-like:hover {
+    border-color: #ff69b4;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 105, 180, 0.2);
+}
+
+/* 좋아요 활성 상태 */
+.btn-like.liked {
+    background: linear-gradient(135deg, #ff69b4, #ff1493);
+    border-color: #ff69b4;
+    color: white;
+    animation: heartBeat 0.4s ease;
+}
+
+/* 좋아요 버튼 비활성화 (처리 중) */
+.btn-like:disabled,
+.btn-like.processing {
+    opacity: 0.7;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+/* 처리 중 애니메이션 */
+.btn-like.processing {
+    animation: pulse 1.5s infinite;
+}
+
+/* 좋아요 아이콘 스타일 */
+.btn-like #likeIcon {
+    font-size: 18px;
+    transition: transform 0.2s ease;
+}
+
+.btn-like.liked #likeIcon {
+    transform: scale(1.2);
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+/* 좋아요 수 스타일 */
+.btn-like #likeCount {
+    font-weight: 600;
+    min-width: 20px;
+    text-align: center;
+}
+
+/* 애니메이션 정의 */
+@keyframes heartBeat {
+    0% { transform: scale(1); }
+    25% { transform: scale(1.1); }
+    50% { transform: scale(1.05); }
+    75% { transform: scale(1.15); }
+    100% { transform: scale(1); }
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.6; }
+    100% { opacity: 1; }
+}
+
+/* 클릭 효과 */
+.btn-like:active {
+    transform: translateY(0) scale(0.95);
+}
+
+/* ========================================
+   반응형 디자인 (모바일)
+======================================== */
+
+@media (max-width: 768px) {
+    .board-actions {
+        flex-direction: column;
+        gap: 15px;
+        padding: 15px 5px;
+    }
+
+    .button-left, .button-center, .button-right {
+        justify-content: center;
+        width: 100%;
+    }
+
+    .btn-like {
+        min-height: 44px;  /* 터치 영역 확보 */
+        font-size: 18px;
+        padding: 12px 24px;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    /* 모바일에서 버튼 순서 조정 */
+    .button-center {
+        order: 1;  /* 좋아요 버튼을 맨 위로 */
+    }
+
+    .button-left {
+        order: 2;  /* 수정/삭제 버튼을 가운데로 */
+    }
+
+    .button-right {
+        order: 3;  /* 목록 버튼을 맨 아래로 */
+    }
+}
+
+@media (max-width: 480px) {
+    .btn-like {
+        min-width: 100px;
+        font-size: 16px;
+    }
+
+    .board-actions {
+        gap: 12px;
+    }
+}
+
+/* ========================================
+   접근성 개선
+======================================== */
+
+.btn-like:focus {
+    outline: 2px solid #ff69b4;
+    outline-offset: 2px;
+}
+
+.btn-like:focus:not(:focus-visible) {
+    outline: none;
+}
+
+/* 스크린 리더용 텍스트 */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+

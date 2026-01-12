@@ -35,10 +35,22 @@
             </div>
             
             <div class="board-actions" id="boardActions">
-                <button id="editBtn" class="btn-primary" style="display: none;">수정</button>
-                <button id="deleteBtn" class="btn-danger" style="display: none;">삭제</button>
-                <button id="backBtn" class="btn-secondary">목록</button>
-            </div>
+			    <div class="button-left">
+			        <button id="editBtn" class="btn-primary" style="display: none;">수정</button>
+			        <button id="deleteBtn" class="btn-danger" style="display: none;">삭제</button>
+			    </div>
+			
+			    <div class="button-center">
+			        <button id="likeBtn" class="btn-like" aria-label="좋아요">
+			            <span id="likeIcon">♡</span>
+			            <span id="likeCount">0</span>
+			        </button>
+			    </div>
+			
+			    <div class="button-right">
+			        <button id="backBtn" class="btn-secondary">목록</button>
+			    </div>
+			</div>
         </div>
         
         <div class="comments-section" id="commentsSection" style="display: none;">
@@ -61,10 +73,12 @@
     <script src="js/state.js"></script>
     <script src="js/GlobalErrorHandler.js"></script>
     <script src="js/app.js"></script>
+    <script src="js/like-service.js"></script>
     <script>
 	    let app;
 	    let boardNo;
 	    let user;
+	    let likeService;
 	
 	    document.addEventListener('DOMContentLoaded', () => {
 	        app = new BoardApp();
@@ -86,6 +100,9 @@
 	        // 사용자 정보 표시
 	        user = app.getUser();
 	        document.getElementById('userInfo').textContent = `${user.name}님 (${user.role})`;
+	        
+	        // 좋아요 서비스 초기화
+			likeService = new LikeService(app.apiClient);
 	
 	        // 이벤트 리스너 등록
 	        setupEventListeners();
@@ -148,6 +165,9 @@
 	                GlobalErrorHandler.getInstance().reportError(error, '게시글 삭제');
 	            }
 	        });
+	        
+	        //좋아요 버튼
+	        document.getElementById('likeBtn').addEventListener('click', handleLikeClick);
 	    }
 	
 	    // 게시글 렌더링
@@ -171,6 +191,7 @@
 	        document.getElementById('commentsSection').style.display = 'block';
 	
 	        loadComments();
+	        loadLikeStatus(); 
 	    }
 	
 	    // 댓글 로드
@@ -258,6 +279,34 @@
 	        document.getElementById(`comment-content-${commentNo}`).style.display = 'block';
 	        document.getElementById(`comment-edit-${commentNo}`).style.display = 'none';
 	    }
+	    
+	    // 좋아요 버튼 클릭 처리
+		async function handleLikeClick() {
+		    if (!user) {
+		        alert('로그인이 필요합니다.');
+		        window.location.href = 'login.html';
+		        return;
+		    }
+		
+		    try {
+		        await likeService.toggleLike(boardNo);
+		    } catch (error) {
+		        console.error('좋아요 처리 실패:', error);
+		        GlobalErrorHandler.getInstance().reportError(error, '좋아요 처리');
+		    }
+		}
+		
+		// 좋아요 상태 로드 (페이지 로딩시)
+		async function loadLikeStatus() {
+		    try {
+		        const status = await likeService.getLikeStatus(boardNo);
+		        likeService.initializeLikeButton(status.liked, status.likeCount);
+		    } catch (error) {
+		        console.error('좋아요 상태 로드 실패:', error);
+		        // 실패해도 페이지는 정상 동작하도록 기본값 설정
+		        likeService.initializeLikeButton(false, 0);
+		    }
+		}
 	</script>
 </body>
 </html>
