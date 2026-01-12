@@ -1,6 +1,7 @@
 package com.example.demo.service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
@@ -305,14 +306,24 @@ public class BoardService {
         Board board = boardRepository.findById(boardNo)
                 .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다: " + boardNo));
 
-        // 권한 체크: 작성자 또는 ADMIN만 삭제 가능
-        User author = userRepository.findById(board.getAuthorNo())
-                .orElseThrow(() -> new IllegalArgumentException("작성자를 찾을 수 없습니다"));
+        // ADMIN이면 바로 삭제 허용
+        if (currentUserRole == Role.ADMIN) {
+            boardRepository.delete(board);
+            return;
+        }
 
+        // 일반 사용자인 경우 작성자 권한 체크
+        Optional<User> authorOpt = userRepository.findById(board.getAuthorNo());
+
+        if (authorOpt.isEmpty()) {
+            // 작성자가 탈퇴한 경우, 일반 사용자는 삭제 불가
+            throw new IllegalStateException("탈퇴한 회원의 게시글은 관리자만 삭제할 수 있습니다");
+        }
+
+        User author = authorOpt.get();
         boolean isAuthor = author.getUserId().equals(currentUserId);
-        boolean isAdmin = currentUserRole == Role.ADMIN;
 
-        if (!isAuthor && !isAdmin) {
+        if (!isAuthor) {
             throw new IllegalStateException("게시글 삭제 권한이 없습니다");
         }
 
