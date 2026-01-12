@@ -284,7 +284,9 @@
 }
 
 .button-center {
-    justify-content: center;      /* 가운데 정렬 */
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
 }
 
 .button-right {
