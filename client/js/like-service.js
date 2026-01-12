@@ -11,39 +11,56 @@ class LikeService {
      * 좋아요 토글 (낙관적 업데이트)
      */
     async toggleLike(boardNo) {
-        // 중복 클릭 방지
-        if (this.isProcessing) {
-            console.log('좋아요 처리 중입니다.');
-            return;
-        }
-
-        this.isProcessing = true;
-
-        // 현재 상태 저장 (롤백용)
-        const currentState = this.getCurrentLikeState();
-
-        try {
-            // 1. 낙관적 업데이트 - 즉시 UI 변경
-            this.updateUIOptimistically();
-
-            // 2. 서버 요청
-            const response = await this.apiClient.request(`/boards/${boardNo}/like`, {
-                method: 'POST'
-            });
-
-            // 3. 서버 응답으로 동기화
-            this.syncWithServer(response.data);
-
-            return response.data;
-
-        } catch (error) {
-            // 4. 실패시 롤백
-            this.rollbackToState(currentState);
-            throw error;
-        } finally {
-            this.isProcessing = false;
-        }
-    }
+	    // 중복 클릭 방지
+	    if (this.isProcessing) {
+	        console.log('좋아요 처리 중입니다.');
+	        return;
+	    }
+	
+	    this.isProcessing = true;
+	
+	    // 현재 상태 저장 (롤백용)
+	    const currentState = this.getCurrentLikeState();
+	
+	    try {
+	        // 1. 낙관적 업데이트 - 즉시 UI 변경
+	        this.updateUIOptimistically();
+	
+	        // 2. 서버 요청
+	        const response = await this.apiClient.request(`/boards/${boardNo}/like`, {
+	            method: 'POST'
+	        });
+	
+	        // 🔍 디버깅: 응답 구조 확인
+	        console.log('전체 응답:', response);
+	        console.log('response.data:', response.data);
+	
+	        // 3. 서버 응답으로 동기화 (ApiResponseDto 구조 고려)
+	        let responseData;
+	        if (response.data && response.data.data) {
+	            responseData = response.data.data;  // ApiResponseDto 구조
+	        } else if (response.data) {
+	            responseData = response.data;       // 직접 데이터
+	        } else {
+	            throw new Error('응답 데이터가 없습니다.');
+	        }
+	
+	        console.log('실제 데이터:', responseData);
+	        this.syncWithServer(responseData);
+	
+	        return responseData;
+	
+	    } catch (error) {
+	        console.error('좋아요 API 오류:', error);
+	        console.error('오류 상세:', error.response);
+	
+	        // 4. 실패시 롤백
+	        this.rollbackToState(currentState);
+	        throw error;
+	    } finally {
+	        this.isProcessing = false;
+	    }
+	}
 
     /**
      * 좋아요 상태 조회 (페이지 로딩시)
