@@ -11,55 +11,57 @@ class LikeService {
      * 좋아요 토글 (낙관적 업데이트)
      */
     async toggleLike(boardNo) {
-        // 중복 클릭 방지
-        if (this.isProcessing) {
-            console.log('좋아요 처리 중입니다.');
-            return;
-        }
+	    // 중복 클릭 방지
+	    if (this.isProcessing) {
+	        console.log('좋아요 처리 중입니다.');
+	        return;
+	    }
+	
+	    this.isProcessing = true;
+	
+	    // 현재 상태 저장 (롤백용)
+	    const currentState = this.getCurrentLikeState();
+	
+	    try {
+	        // 1. 낙관적 업데이트 - 즉시 UI 변경
+	        this.updateUIOptimistically();
+	
+	        // 2. 서버 요청
+	        const responseData = await this.apiClient.request(`/boards/${boardNo}/like`, {
+	            method: 'POST'
+	        });
+	
+	        // 3. API 클라이언트가 이미 data 부분만 반환함
+	        console.log('받은 데이터:', responseData);
+	
+	        // 4. 서버 응답으로 동기화
+	        this.syncWithServer(responseData);
+	
+	        return responseData;
+	
+	    } catch (error) {
+	        console.error('좋아요 처리 실패:', error);
+	
+	        // 5. 실패시 롤백
+	        this.rollbackToState(currentState);
+	        throw error;
+	    } finally {
+	        this.isProcessing = false;
+	    }
+	}
+	
+	async getLikeStatus(boardNo) {
+	    try {
+	        const responseData = await this.apiClient.request(`/boards/${boardNo}/like`);
+	        console.log('상태 조회 데이터:', responseData);
+	        return responseData;
+	    } catch (error) {
+	        console.error('좋아요 상태 조회 실패:', error);
+	        return { liked: false, likeCount: 0 };
+	    }
+	}
 
-        this.isProcessing = true;
 
-        // 현재 상태 저장 (롤백용)
-        const currentState = this.getCurrentLikeState();
-
-        try {
-            // 1. 낙관적 업데이트 - 즉시 UI 변경
-            this.updateUIOptimistically();
-
-            // 2. 서버 요청
-            const response = await this.apiClient.request(`/boards/${boardNo}/like`, {
-                method: 'POST'
-            });
-
-            // 3. ApiResponseDto에서 실제 데이터 추출
-            const responseData = response.data.data;  // ← 수정된 부분
-
-            // 4. 서버 응답으로 동기화
-            this.syncWithServer(responseData);
-
-            return responseData;
-
-        } catch (error) {
-            // 5. 실패시 롤백
-            this.rollbackToState(currentState);
-            throw error;
-        } finally {
-            this.isProcessing = false;
-        }
-    }
-
-    /**
-     * 좋아요 상태 조회 (페이지 로딩시)
-     */
-    async getLikeStatus(boardNo) {
-        try {
-            const response = await this.apiClient.request(`/boards/${boardNo}/like`);
-            return response.data.data;  // ← 수정된 부분
-        } catch (error) {
-            console.error('좋아요 상태 조회 실패:', error);
-            return { liked: false, likeCount: 0 };
-        }
-    }
 
     /**
      * 현재 UI 상태 저장 (롤백용)
