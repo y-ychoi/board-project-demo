@@ -1,5 +1,7 @@
 # Board Project Demo
 
+**Last Updated:** 2026.01.12
+
 ## 1. 프로젝트 소개
 
 Spring Boot와 Spring Security를 활용한 **하이브리드 게시판 애플리케이션**입니다. 전통적인 MVC 웹 인터페이스와 최신 REST API를 모두 제공하여, 웹 브라우저와 모바일 앱 등 다양한 클라이언트를 지원합니다.
@@ -16,7 +18,8 @@ Spring Boot와 Spring Security를 활용한 **하이브리드 게시판 애플�
 
 ### REST API
 - **JWT 토큰 기반 인증** - Stateless 인증 방식
-- **완전한 RESTful API** - 11개 엔드포인트 제공
+- **완전한 RESTful API** - 13개 엔드포인트 제공
+- **좋아요 소셜 기능** - 실시간 좋아요/취소 시스템
 - **자동 API 문서화** - Swagger/OpenAPI 3.0
 - **계층적 권한 체계** - GUEST/ADMIN 구분
 - **표준화된 JSON 응답** - 일관된 응답 형식
@@ -25,7 +28,8 @@ Spring Boot와 Spring Security를 활용한 **하이브리드 게시판 애플�
 ### JavaScript 클라이언트 (SPA)
 - **완전한 프론트엔드 구현** - 모든 REST API 연동 완료
 - **JWT 토큰 관리** - 자동 인증 헤더 처리
-- **모듈화된 아키텍처** - 8개 JavaScript 모듈
+- **모듈화된 아키텍처** - 9개 JavaScript 모듈
+- **낙관적 업데이트** - 즉각적인 사용자 경험
 - **반응형 UI** - 모바일 친화적 디자인
 - **실시간 상태 관리** - StateManager 기반
 
@@ -90,7 +94,8 @@ board-project-demo/
 │   │   ├── AuthRestController.java         # REST 인증 API
 │   │   ├── UserRestController.java         # REST 사용자 API
 │   │   ├── BoardRestController.java        # REST 게시판 API
-│   │   └── CommentRestController.java      # REST 댓글 API
+│   │   ├── CommentRestController.java      # REST 댓글 API
+│   │   └── BoardLikeRestController.java    # REST 좋아요 API
 │   ├── dto/                               # 데이터 전송 객체
 │   │   ├── BoardDetailResponseDto.java     # MVC용 DTO
 │   │   ├── BoardListResponseDto.java
@@ -101,21 +106,26 @@ board-project-demo/
 │   │   ├── SignupRequestDto.java
 │   │   ├── BoardCreateRequestDto.java
 │   │   ├── BoardUpdateRequestDto.java
-│   │   └── CommentCreateRequestDto.java
+│   │   ├── CommentCreateRequestDto.java
+│   │   ├── BoardLikeToggleDto.java         # 좋아요 토글 응답 DTO
+│   │   └── BoardLikeStatusDto.java         # 좋아요 상태 조회 DTO
 │   ├── entity/                            # JPA 엔티티
 │   │   ├── BaseEntity.java
 │   │   ├── Board.java
 │   │   ├── Comment.java
 │   │   ├── User.java
-│   │   └── Role.java
+│   │   ├── Role.java
+│   │   └── BoardLike.java                  # 좋아요 엔티티
 │   ├── repository/                        # 데이터 접근 계층
 │   │   ├── BoardRepository.java
 │   │   ├── CommentRepository.java
-│   │   └── UserRepository.java
+│   │   ├── UserRepository.java
+│   │   └── BoardLikeRepository.java        # 좋아요 데이터 접근
 │   ├── service/                           # 비즈니스 로직
 │   │   ├── BoardService.java
 │   │   ├── CommentService.java
-│   │   └── UserService.java
+│   │   ├── UserService.java
+│   │   └── BoardLikeService.java           # 좋아요 비즈니스 로직
 │   ├── security/                          # 보안 관련
 │   │   └── UserSecurityService.java
 │   ├── jwt/                               # JWT 관련
@@ -141,17 +151,23 @@ board-project-demo/
 │   │   ├── api.js                        # REST API 호출
 │   │   ├── board-service.js              # 게시판 서비스
 │   │   ├── user-service.js               # 사용자 서비스
+│   │   ├── like-service.js               # 좋아요 서비스
 │   │   ├── state.js                      # 상태 관리
 │   │   ├── GlobalErrorHandler.js         # 통합 오류 처리 시스템
 │   │   ├── page-init.js                  # 페이지 공통 초기화
 │   │   └── app.js                        # 메인 애플리케이션
 │   ├── css/
-│   │   └── style.css                     # 스타일시트
+│   │   ├── style.css                     # 메인 스타일시트
+│   │   ├── common.css                    # 공통 스타일
+│   │   ├── components.css                # 컴포넌트 스타일
+│   │   ├── board.css                     # 게시판 스타일 (좋아요 포함)
+│   │   ├── auth.css                      # 인증 스타일
+│   │   └── admin.css                     # 관리자 스타일
 │   ├── login.html                        # 로그인 페이지
 │   ├── signup.html                       # 회원가입 페이지
 │   ├── boards.html                       # 게시글 목록
 │   ├── board-create.html                 # 게시글 작성
-│   ├── board-detail.html                 # 게시글 상세
+│   ├── board-detail.html                 # 게시글 상세 (좋아요 포함)
 │   ├── board-edit.html                   # 게시글 수정
 │   ├── admin.html                        # 관리자 페이지
 │   └── README.md                         # 클라이언트 사용 가이드
@@ -316,6 +332,12 @@ Client Response ← Thymeleaf ← DTO ← Entity ← JPA/Hibernate
 | PUT | `/api/v1/boards/{boardNo}/comments/{commentNo}` | 댓글 수정 | OWNER만 |
 | DELETE | `/api/v1/boards/{boardNo}/comments/{commentNo}` | 댓글 삭제 | OWNER/ADMIN |
 
+#### 좋아요 API
+| Method | URL | 설명 | 권한 |
+|--------|-----|------|------|
+| GET | `/api/v1/boards/{boardNo}/like` | 좋아요 상태 조회 | USER |
+| POST | `/api/v1/boards/{boardNo}/like` | 좋아요 토글 (추가/취소) | USER |
+
 ### 요청/응답 예시
 
 #### 웹 애플리케이션
@@ -371,6 +393,19 @@ Content-Type: application/json
 {
   "content": "수정된 댓글 내용입니다."
 }
+
+# 좋아요 토글
+POST /api/v1/boards/{boardNo}/like
+Authorization: Bearer {토큰}
+
+# 응답
+{
+  "success": true,
+  "data": {
+    "liked": true,
+    "likeCount": 16
+  }
+}
 ```
 
 ## 🎯 프로젝트 완성도
@@ -379,7 +414,7 @@ Content-Type: application/json
 
 **백엔드 (Spring Boot)**
 - MVC 웹 애플리케이션 완전 구현
-- REST API 11개 엔드포인트 완전 구현
+- REST API 13개 엔드포인트 완전 구현
 - JWT 인증 시스템 완료
 - Spring Security 이중 보안 설정 완료
 - Swagger API 문서화 완료
@@ -387,6 +422,7 @@ Content-Type: application/json
 - 탈퇴 회원 마스킹 예외 처리 완료 (2025.12.30)
 - 에러 처리 시스템 통합 완료 (2026.01.08)
 - 관리자 페이지 기본 구현 완료 (2026.01.08)
+- 좋아요 소셜 기능 완료 (2026.01.12)
 
 **프론트엔드 (JavaScript SPA)**
 - 완전한 SPA 클라이언트 구현
@@ -396,6 +432,7 @@ Content-Type: application/json
 - 반응형 UI 구현
 - GlobalErrorHandler 통합 에러 처리 시스템 완료 (2026.01.08)
 - 코드 모듈화 및 구조 개선 완료 (2026.01.08)
+- 좋아요 낙관적 업데이트 시스템 완료 (2026.01.12)
 
 **보안 및 성능**
 - BCrypt 암호화
@@ -442,12 +479,23 @@ TB_COMMENT (
     create_dt DATETIME,
     update_dt DATETIME
 )
+-- 좋아요 테이블
+TB_BOARD_LIKE (
+    like_no BIGINT PRIMARY KEY AUTO_INCREMENT,
+    board_no BIGINT NOT NULL,
+    user_no BIGINT NOT NULL,
+    create_dt DATETIME,
+    update_dt DATETIME,
+    UNIQUE KEY uk_board_user_like (board_no, user_no)
+)
 ```
 
 #### 연관관계
 - User : Board = 1 : N (한 사용자는 여러 게시글 작성 가능)
 - User : Comment = 1 : N (한 사용자는 여러 댓글 작성 가능)
 - Board : Comment = 1 : N (한 게시글에 여러 댓글 작성 가능)
+- User : BoardLike = 1 : N (한 사용자는 여러 게시글에 좋아요 가능)
+- Board : BoardLike = 1 : N (한 게시글은 여러 사용자로부터 좋아요 받을 수 있음)
 
 ### B. 개발 환경 설정
 
@@ -467,7 +515,7 @@ TB_COMMENT (
 - 파일 업로드 기능 (이미지, 첨부파일)
 - 게시글 검색 기능 (제목, 내용, 작성자)
 - 게시글 카테고리 분류
-- 좋아요/싫어요 기능
+- 좋아요 고급 기능 (좋아요 목록, 인기 게시글)
 - 실시간 알림 시스템
 
 #### 성능 최적화
